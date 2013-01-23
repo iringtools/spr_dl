@@ -1,0 +1,5 @@
+﻿<databaseDictionary xmlns="http://www.iringtools.org/library" xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+  <provider>Microsoft.Jet.OLEDB.4.0</provider>
+  <connectionString>C:\\Users\\jaestrad\\Documents\\Development\\iRing\\pbop_all.mdb</connectionString>
+  <schemaName>dbo</schemaName>
+</databaseDictionary>

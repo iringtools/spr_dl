@@ -1,0 +1,118 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!--This file represents the results of running a test suite-->
+<test-results name="C:\Users\jaestrad\Documents\Visual Studio 2010\Projects\MSAccess-master\MSAccessTest.NUnit\MSAccessTest.NUnit.csproj" total="12" errors="0" failures="12" not-run="0" inconclusive="0" ignored="0" skipped="0" invalid="0" date="2013-01-20" time="15:55:32">
+  <environment nunit-version="2.5.8.10295" clr-version="4.0.30319.296" os-version="Microsoft Windows NT 6.1.7601 Service Pack 1" platform="Win32NT" cwd="C:\Users\jaestrad\Documents\Visual Studio 2010\Projects\MSAccess-master\lib\nunit\NUnit.Runner\bin\Debug" machine-name="HOUD21187" user="jaestrad" user-domain="IAMERS" />
+  <culture-info current-culture="en-US" current-uiculture="en-US" />
+  <test-suite type="Project" name="C:\Users\jaestrad\Documents\Visual Studio 2010\Projects\MSAccess-master\MSAccessTest.NUnit\MSAccessTest.NUnit.csproj" executed="True" result="Failure" success="False" time="8.175" asserts="0">
+    <results>
+      <test-suite type="Assembly" name="C:\Users\jaestrad\Documents\Visual Studio 2010\Projects\MSAccess-master\MSAccessTest.NUnit\bin\Debug\ObjectDataLater.NUnit.dll" executed="True" result="Failure" success="False" time="8.159" asserts="0">
+        <results>
+          <test-suite type="Namespace" name="org" executed="True" result="Failure" success="False" time="8.159" asserts="0">
+            <results>
+              <test-suite type="Namespace" name="iringtools" executed="True" result="Failure" success="False" time="8.159" asserts="0">
+                <results>
+                  <test-suite type="Namespace" name="sdk" executed="True" result="Failure" success="False" time="8.159" asserts="0">
+                    <results>
+                      <test-suite type="Namespace" name="sql" executed="True" result="Failure" success="False" time="8.159" asserts="0">
+                        <results>
+                          <test-suite type="Namespace" name="test" executed="True" result="Failure" success="False" time="8.159" asserts="0">
+                            <results>
+                              <test-suite type="TestFixture" name="SQLDataLayerTest" executed="True" result="Error" success="False" time="8.159" asserts="0">
+                                <failure>
+                                  <message><![CDATA[SetUp : System.InvalidOperationException : The connection was not closed. The connection's current state is open.]]></message>
+                                  <stack-trace><![CDATA[at System.Data.ProviderBase.DbConnectionInternal.OpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory)
+at System.Data.SqlClient.SqlConnection.Open()
+at org.iringtools.sdk.MSAccess.MSAccessDataLayer..ctor() in C:\Users\jaestrad\Documents\Visual Studio 2010\Projects\MSAccess-master\MSAccessDataLayer\MSAccessDataLayer.cs:line 77
+at org.iringtools.sdk.sql.test.SQLDataLayerTest..ctor() in C:\Users\jaestrad\Documents\Visual Studio 2010\Projects\MSAccess-master\MSAccessTest.NUnit\Test.cs:line 59
+]]></stack-trace>
+                                </failure>
+                                <results>
+                                  <test-case name="org.iringtools.sdk.sql.test.SQLDataLayerTest.A_RUNTHIS" executed="True" result="Failure" success="False" time="0.000" asserts="0">
+                                    <failure>
+                                      <message><![CDATA[TestFixtureSetUp failed in SQLDataLayerTest]]></message>
+                                      <stack-trace />
+                                    </failure>
+                                  </test-case>
+                                  <test-case name="org.iringtools.sdk.sql.test.SQLDataLayerTest.CreateDataTable" executed="True" result="Failure" success="False" time="0.000" asserts="0">
+                                    <failure>
+                                      <message><![CDATA[TestFixtureSetUp failed in SQLDataLayerTest]]></message>
+                                      <stack-trace />
+                                    </failure>
+                                  </test-case>
+                                  <test-case name="org.iringtools.sdk.sql.test.SQLDataLayerTest.DeleteDataTable" executed="True" result="Failure" success="False" time="0.000" asserts="0">
+                                    <failure>
+                                      <message><![CDATA[TestFixtureSetUp failed in SQLDataLayerTest]]></message>
+                                      <stack-trace />
+                                    </failure>
+                                  </test-case>
+                                  <test-case name="org.iringtools.sdk.sql.test.SQLDataLayerTest.DeleteWithIdentifiers" executed="True" result="Failure" success="False" time="0.000" asserts="0">
+                                    <failure>
+                                      <message><![CDATA[TestFixtureSetUp failed in SQLDataLayerTest]]></message>
+                                      <stack-trace />
+                                    </failure>
+                                  </test-case>
+                                  <test-case name="org.iringtools.sdk.sql.test.SQLDataLayerTest.GetCount" executed="True" result="Failure" success="False" time="0.000" asserts="0">
+                                    <failure>
+                                      <message><![CDATA[TestFixtureSetUp failed in SQLDataLayerTest]]></message>
+                                      <stack-trace />
+                                    </failure>
+                                  </test-case>
+                                  <test-case name="org.iringtools.sdk.sql.test.SQLDataLayerTest.GetDictionary" executed="True" result="Failure" success="False" time="0.000" asserts="0">
+                                    <failure>
+                                      <message><![CDATA[TestFixtureSetUp failed in SQLDataLayerTest]]></message>
+                                      <stack-trace />
+                                    </failure>
+                                  </test-case>
+                                  <test-case name="org.iringtools.sdk.sql.test.SQLDataLayerTest.GetRelatedDataTables" executed="True" result="Failure" success="False" time="0.000" asserts="0">
+                                    <failure>
+                                      <message><![CDATA[TestFixtureSetUp failed in SQLDataLayerTest]]></message>
+                                      <stack-trace />
+                                    </failure>
+                                  </test-case>
+                                  <test-case name="org.iringtools.sdk.sql.test.SQLDataLayerTest.Read" executed="True" result="Failure" success="False" time="0.000" asserts="0">
+                                    <failure>
+                                      <message><![CDATA[TestFixtureSetUp failed in SQLDataLayerTest]]></message>
+                                      <stack-trace />
+                                    </failure>
+                                  </test-case>
+                                  <test-case name="org.iringtools.sdk.sql.test.SQLDataLayerTest.ReadWithFilter" executed="True" result="Failure" success="False" time="0.000" asserts="0">
+                                    <failure>
+                                      <message><![CDATA[TestFixtureSetUp failed in SQLDataLayerTest]]></message>
+                                      <stack-trace />
+                                    </failure>
+                                  </test-case>
+                                  <test-case name="org.iringtools.sdk.sql.test.SQLDataLayerTest.ReadWithIdentifiers" executed="True" result="Failure" success="False" time="0.000" asserts="0">
+                                    <failure>
+                                      <message><![CDATA[TestFixtureSetUp failed in SQLDataLayerTest]]></message>
+                                      <stack-trace />
+                                    </failure>
+                                  </test-case>
+                                  <test-case name="org.iringtools.sdk.sql.test.SQLDataLayerTest.ReadWithPaging" executed="True" result="Failure" success="False" time="0.000" asserts="0">
+                                    <failure>
+                                      <message><![CDATA[TestFixtureSetUp failed in SQLDataLayerTest]]></message>
+                                      <stack-trace />
+                                    </failure>
+                                  </test-case>
+                                  <test-case name="org.iringtools.sdk.sql.test.SQLDataLayerTest.TestAll" executed="True" result="Failure" success="False" time="0.000" asserts="0">
+                                    <failure>
+                                      <message><![CDATA[TestFixtureSetUp failed in SQLDataLayerTest]]></message>
+                                      <stack-trace />
+                                    </failure>
+                                  </test-case>
+                                </results>
+                              </test-suite>
+                            </results>
+                          </test-suite>
+                        </results>
+                      </test-suite>
+                    </results>
+                  </test-suite>
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+    </results>
+  </test-suite>
+</test-results>
