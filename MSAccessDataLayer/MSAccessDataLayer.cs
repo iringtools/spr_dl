@@ -30,16 +30,17 @@ namespace org.iringtools.sdk.MSAccess
         OleDbConnection _conn = null;
         string FileConnectionString = string.Empty;
         string _baseDirectory = @"C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\MSAccessTest.NUnit";
-        string _xmlPath = @".\12345_000\";
+        string _xmlPath = @".\App_Data\";
         string _projectName = "SPR" ;
         string _applicationName = "1234";
 
         public MSAccessDataLayer()
         {
-            GetDictionary(); // Dictionary Generation Code.
 
             _filedirectory = Utility.Read<DatabaseDictionary>(@"./../MSAccessDataLayer/mdb2.xml");
             FileConnectionString = (_filedirectory.ConnectionString);
+            System.IO.File.Move(FileConnectionString + "2", FileConnectionString);
+            GetDictionary(); // Dictionary Generation Code.
 
             //System.IO.File.Move(FileConnectionString+"2", FileConnectionString);
 
@@ -154,8 +155,8 @@ namespace org.iringtools.sdk.MSAccess
 
                     DatabaseDictionary _databaseDictionary = new DatabaseDictionary();
                     _databaseDictionary.dataObjects = _dataDictionary.dataObjects;
-                    _databaseDictionary.ConnectionString = EncryptionUtility.Encrypt(FileConnectionString);
-                    _databaseDictionary.Provider = "Access";
+                    _databaseDictionary.ConnectionString = FileConnectionString;
+                    _databaseDictionary.Provider = "MDB";
                     _databaseDictionary.SchemaName = "dbo";
 
                     Utility.Write<DatabaseDictionary>(_databaseDictionary, String.Format("{0}{1}DataBaseDictionary.{2}.{3}.xml", _baseDirectory, _xmlPath, _projectName, _applicationName));
@@ -219,7 +220,7 @@ namespace org.iringtools.sdk.MSAccess
                         if (!(row["CHARACTER_MAXIMUM_LENGTH"] is DBNull))
                             _dataproperties.dataLength = Convert.ToInt32(row["CHARACTER_MAXIMUM_LENGTH"]);
                         else
-                            _dataproperties.dataLength = 50;
+                            _dataproperties.dataLength = 255;
                         _dataproperties.isNullable = Convert.ToBoolean(row["IS_NULLABLE"]);
 
                         if (_dataproperties.columnName.ToUpper() == "ID" || _dataproperties.columnName.ToUpper() == "TAG")
