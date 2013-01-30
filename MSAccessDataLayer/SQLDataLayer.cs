@@ -55,7 +55,8 @@ namespace org.iringtools.sdk.sql
             _dbConnectionString = _sprSettings["dbconnection"].ToString();
             _providerName = _sprSettings["mdbprovider"].ToString();
             _mdbConnectionString = String.Format("Provider={0};Data Source={1}", _providerName, _mdbFileName);
-            ReverseRefresh();//calling reverse refresh
+            
+            //Response response = ReverseRefresh();  //calling reverse refresh
         }
 
         public override DatabaseDictionary GetDatabaseDictionary()
@@ -752,6 +753,7 @@ namespace org.iringtools.sdk.sql
 
         private Response CreateCacheAndFill()
         {
+            
             Response response = new Response();
             string status = string.Empty;
             try
@@ -802,9 +804,25 @@ namespace org.iringtools.sdk.sql
                             dataType = "INT";
                             vsSQL = "[" + strColumn + "] [" + dataType + "] " + isNullable + ",";
                         }
+                        //else if (colRow["DATA_TYPE"].ToString() == "5")
+                        //{
+                        //    dataType = "FLOAT";
+                        //    vsSQL = "[" + strColumn + "] [" + dataType + "] " + isNullable + ",";
+                        //}
                         else if (colRow["DATA_TYPE"].ToString() == "11")
                         {
-                            dataType = "BIT";
+                            //dataType = "BIT"; True/false in 0 & 1
+                            dataType = "INT";
+                            vsSQL = "[" + strColumn + "] [" + dataType + "] " + isNullable + ",";
+                        }
+                        else if (colRow["DATA_TYPE"].ToString() == "128")
+                        {
+                            dataType = "image";
+                            vsSQL = "[" + strColumn + "] [" + dataType + "] " + isNullable + ",";
+                        }
+                        else if (colRow["DATA_TYPE"].ToString() == "7")
+                        {
+                            dataType = "DATE";
                             vsSQL = "[" + strColumn + "] [" + dataType + "] " + isNullable + ",";
                         }
                         else
@@ -863,7 +881,7 @@ namespace org.iringtools.sdk.sql
                     // Bulk copy from Access to SQL ...  
                     using (SqlBulkCopy bulkCopy = new SqlBulkCopy(_conn))
                     {
-
+                        bulkCopy.BulkCopyTimeout = 600;
                         bulkCopy.DestinationTableName = "dbo." + strSheetTableName;
                         try
                         {
@@ -896,111 +914,115 @@ namespace org.iringtools.sdk.sql
             return response;
         }
 
-        public void ReverseRefresh()
+        public Response ReverseRefresh()
         {
-            ConnectToSqL();
-            List<string> SQLtableNames = LoadSQLTable();
-            List<string> AccesstableNames = new List<string>();
-
-            ConnectToExcel();
-            DataTable dt = _connOledb.GetSchema("tables");
-            foreach (DataRow row in dt.Rows)
+            string status = string.Empty;
+            Response response = new Response();
+            try
             {
-                AccesstableNames.Add(row["TABLE_NAME"].ToString());
-            }
+                ConnectToSqL();
+                List<string> SQLtableNames = LoadSQLTable();
+                List<string> AccesstableNames = new List<string>();
 
-            foreach (string tblName in SQLtableNames)
-            {
-                if (AccesstableNames.Contains(tblName))
+                ConnectToExcel();
+                DataTable dt = _connOledb.GetSchema("tables");
+                foreach (DataRow row in dt.Rows)
                 {
-                    // Drop and create 
+                    if (row["TABLE_TYPE"].ToString() == "TABLE")
+                        AccesstableNames.Add(row["TABLE_NAME"].ToString());
+                }
 
-                    OleDbCommand command = new OleDbCommand();
-                    command.Connection = _connOledb;
-                    command.CommandText = string.Format("DELETE FROM {0}", tblName);
-                    command.ExecuteNonQuery();
-                    logger.Info("Table deleted");
+                foreach (string tblName in SQLtableNames)
+                {
+                    if (AccesstableNames.Contains(tblName))
+                    {
+                        // Drop and create 
 
-                    DataTable sqlDatatable =new DataTable();
-                    SqlCommand sqlCommand = new SqlCommand();
-                    SqlDataAdapter sqlda = new SqlDataAdapter(string.Format("SELECT * FROM {0}", tblName), _conn);
-                    sqlda.Fill(sqlDatatable);
-
-                    DataTable oldbDatatable = new DataTable();
-                    command = new OleDbCommand();
-                    OleDbDataAdapter olda = new OleDbDataAdapter(string.Format("SELECT * FROM {0}", tblName), _connOledb);
-                    olda.Fill(oldbDatatable);
-
-
-            
-
-                    foreach (DataRow row in sqlDatatable.Rows)
-                    { 
-                        string query = "";
-                        string colsNames = "";
-
-                        command = new OleDbCommand();
-                        foreach(DataColumn col in sqlDatatable.Columns)
-                        {
-                            colsNames +=  col.ColumnName + ",";
-                            query += "'" + row[col] + "'" + ",";
-                            //query += " ? ,";
-                            //OleDbParameter param = new OleDbParameter();
-
-                            //if (oldbDatatable.Columns[col.ColumnName].DataType != sqlDatatable.Columns[col.ColumnName].DataType)
-                            //{
-                                
-                            //    if (oldbDatatable.Columns[col.ColumnName].DataType == typeof(DateTime))
-                            //    {
-
-                            //        //query += "#" + Convert.ToDateTime(row[col]) + "#" + ",";
-                            //    }
-                            //}
-                            //else
-                            //{
-                            //    param.DbType = col.DataType;
-                            //    query += "'" + row[col] + "'" + ",";
-                            //}
-                                
-                        }
-
-                        colsNames = colsNames.Substring(0, colsNames.LastIndexOf(','));
-                        query =query.Substring(0,query.LastIndexOf(','));
-
-                        query = "Insert into " + tblName + " (" + colsNames + " )  Values (" + query + " );"; 
-                     
-
-                        command.CommandText = query;
+                        OleDbCommand command = new OleDbCommand();
                         command.Connection = _connOledb;
+                        command.CommandText = string.Format("DELETE FROM {0}", tblName);
                         command.ExecuteNonQuery();
-                       
+                        logger.Info("Table deleted");
+
+                        DataTable sqlDatatable = new DataTable();
+                        SqlCommand sqlCommand = new SqlCommand();
+                        SqlDataAdapter sqlda = new SqlDataAdapter(string.Format("SELECT * FROM {0}", tblName), _conn);
+                        sqlda.Fill(sqlDatatable);
+
+                        DataTable oldbDatatable = new DataTable();
+                        command = new OleDbCommand();
+                        OleDbDataAdapter olda = new OleDbDataAdapter(string.Format("SELECT * FROM {0}", tblName), _connOledb);
+                        olda.Fill(oldbDatatable);
+
+
+                        foreach (DataRow row in sqlDatatable.Rows)
+                        {
+                            string query = "";
+                            string colsNames = "";
+
+                            command = new OleDbCommand();
+                            foreach (DataColumn col in sqlDatatable.Columns)
+                            {
+                                colsNames += col.ColumnName + ",";
+                                if (row[col].ToString().Contains("'"))
+                                {
+                                    query += "'" + row[col].ToString().Replace("'","''") + "'" + ",";
+                                }
+                                else
+                                {
+                                    if (oldbDatatable.Columns[col.ColumnName].DataType != sqlDatatable.Columns[col.ColumnName].DataType &&
+                                    oldbDatatable.Columns[col.ColumnName].DataType == typeof(Double) && row[col].ToString().Contains("Infinity"))
+                                    {
+                                        OleDbParameter param = null;
+                                        query += "? ,";
+                                        if (row[col].ToString() == "Infinity")
+                                        {
+                                            param = new OleDbParameter(col.ColumnName, double.PositiveInfinity);
+                                        }
+                                        else if (row[col].ToString() == "-Infinity")
+                                        {
+                                            param = new OleDbParameter(col.ColumnName, double.NegativeInfinity);
+                                        }
+                                        command.Parameters.Add(param);
+                                    }
+                                    else
+                                    {
+                                        query += "'" + row[col] + "'" + ",";
+                                    }
+                                }
+                            }
+
+                            colsNames = colsNames.Substring(0, colsNames.LastIndexOf(','));
+                            query = query.Substring(0, query.LastIndexOf(','));
+
+                            query = "Insert into " + tblName + " (" + colsNames + " )  Values (" + query + " );";
+
+                            command.CommandText = query;
+                            command.Connection = _connOledb;
+                            command.ExecuteNonQuery();
+
+                        }
                     }
 
-                    //DataTable oldbDatatable = new DataTable();
-                    //command = new OleDbCommand();
-                    //OleDbDataAdapter olda = new OleDbDataAdapter(string.Format("SELECT * FROM {0}", tblName), _connOledb);
-                    //olda.Fill(oldbDatatable);
-
-                    //for (int i = 0; i < oldbDatatable.Columns.Count; i++)
-                    //{
-                    //    if (oldbDatatable.Columns[i].DataType != sqlDatatable.Columns[i].DataType)
-                    //    {
-                    //        sqlDatatable.Columns[i].DataType = oldbDatatable.Columns[i].DataType;
-                    //    }
-                    //}
-
-
-                    //oldbDatatable.Merge(sqlDatatable);
-                    //OleDbCommandBuilder oldbbuilder = new OleDbCommandBuilder(olda);
-                    //olda.Update(oldbDatatable);
-
-                    //command = new OleDbCommand("SELECT * INTO ["+tblName+"] IN '' [ODBC;Driver={SQL Server};Server=(.\\local);Database=ABC;User ID=abc;Password=123;Trusted_Connection=yes] FROM ["+tblName+"]", _connOledb);
-                    //command.ExecuteNonQuery();
-
-
                 }
-                
+                status = "success";
             }
+            catch (Exception ex)
+            {
+                logger.Info("Error occured while updating the Access tables and the data :   " + ex.Message);
+                throw ex;
+            }
+            finally
+            {
+                disconnectAccess();
+                disconnectSqL();
+                response.StatusList.Add(new Status
+                {
+                    Level = (status == "success") ? StatusLevel.Success : StatusLevel.Error,
+                    Messages = new org.iringtools.library.Messages { (status == "success") ? " Record updated successfully." : " Error occured while updated the access tables and the data" }
+                });
+            }
+            return response;
         }
 
         private List<string> LoadSQLTable()
