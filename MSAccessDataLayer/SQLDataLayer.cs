@@ -111,7 +111,7 @@ namespace org.iringtools.sdk.sql
             try
             {
                 List<string> _dataTables = new List<string>();
-                ConnectToExcel();
+                ConnectToAccess();
                 DataTable dt = _connOledb.GetOleDbSchemaTable(OleDbSchemaGuid.Tables, new object[] { null, null, null, "TABLE" });
                 foreach (DataRow tablerow in dt.Rows)
                 {
@@ -135,7 +135,7 @@ namespace org.iringtools.sdk.sql
                 KeyProperty _keyproperties = new KeyProperty();
                 DataProperty _dataproperties = new DataProperty();
                 DataDictionary dataDictionary = new DataDictionary();
-                ConnectToExcel();
+                ConnectToAccess();
 
                 foreach (string strname in tableNames)
                 {
@@ -354,6 +354,7 @@ namespace org.iringtools.sdk.sql
             string status = string.Empty;
             try
             {
+                // Updating SQL
                 ConnectToSqL();
                 string tableName = dataTables.First().TableName;
                 string query = "SELECT * FROM " + tableName;
@@ -371,6 +372,24 @@ namespace org.iringtools.sdk.sql
                 }
 
                 _adapter.Update(dataSet, tableName);
+
+                // Updating Access
+                ConnectToAccess();
+                OleDbDataAdapter Oledbadapter = new OleDbDataAdapter();
+                Oledbadapter.SelectCommand = new OleDbCommand(query, _connOledb);
+
+                OleDbCommandBuilder OleDbcommand = new OleDbCommandBuilder(Oledbadapter);
+                Oledbadapter.UpdateCommand = OleDbcommand.GetUpdateCommand();
+
+                DataSet OledbdataSet = new DataSet();
+                foreach (DataTable dataTable in dataTables)
+                {
+                    DataTable dt = Utility.CloneSerializableObject<DataTable>(dataTable);
+                    OledbdataSet.Tables.Add(dt);
+                }
+
+                int i = Oledbadapter.Update(OledbdataSet, tableName);
+
                 status = "success";
             }
             catch(Exception ex)
@@ -381,6 +400,7 @@ namespace org.iringtools.sdk.sql
             finally
             {
                 disconnectSqL();
+                disconnectAccess();
                 response.StatusList.Add(new Status
                 {
                     Level = (status == "success") ? StatusLevel.Success : StatusLevel.Error,
@@ -402,10 +422,17 @@ namespace org.iringtools.sdk.sql
 
             try
             {
+                // Delete from SQL DB
                 ConnectToSqL();
                 SqlCommand command = new SqlCommand(query, _conn);
-                int numberDeleted = command.ExecuteNonQuery();
-                if (numberDeleted > 0)
+                int iSqlRowCount = command.ExecuteNonQuery();
+                
+                // Delete from Access
+                ConnectToAccess();
+                OleDbCommand Oledbcommand = new OleDbCommand(query, _connOledb);
+                int iAccessRowCount = Oledbcommand.ExecuteNonQuery();
+
+                if (iSqlRowCount > 0 && iAccessRowCount > 0)
                 {
                     status.Level = StatusLevel.Success;
                     status.Messages = new Messages();
@@ -422,6 +449,7 @@ namespace org.iringtools.sdk.sql
             finally
             {
                 disconnectSqL();
+                disconnectAccess();
             }
         }
 
@@ -456,20 +484,48 @@ namespace org.iringtools.sdk.sql
                     {
                         tempQry += " and ";
                     }
-
+                    IList<DataProperty> property = (from p in dataObject.dataProperties 
+                                            where p.propertyName == keyProperties[i].ToString()
+                                                 select p).ToList();
+                    
                     if (keyProperties.Count > 1)
-                        tempQry = tempQry + keyProperties[i] + " = '" + ids[i] + "'";
+                    {
+                        if (property[0].dataType == DataType.Int32)
+                        {
+                            tempQry = tempQry + keyProperties[i] + " = " + ids[i];
+                        }
+                        else
+                        {
+                            tempQry = tempQry + keyProperties[i] + " = '" + ids[i] + "'";
+                        }
+                    }
                     else
-                        tempQry = tempQry + keyProperties[i] + " = '" + identifier + "'";
+                    {
+                        if (property[0].dataType == DataType.Int32)
+                        {
+                            tempQry = tempQry + keyProperties[i] + " = " + identifier;
+                        }
+                        else
+                        {
+                            tempQry = tempQry + keyProperties[i] + " = '" + identifier + "'";
+                        }
+                    }
                     i++;
                 }
                 try
                 {
+                    // Delete From SQL ...
                     ConnectToSqL();
                     string query = "Delete FROM " + tableName + " where " + tempQry;
                     SqlCommand command = new SqlCommand(query, _conn);
-                    int numberDeleted = command.ExecuteNonQuery();
-                    if (numberDeleted > 0)
+                    int iSqlRowCount = command.ExecuteNonQuery();
+
+                    // Delete From Access ...
+                    ConnectToAccess();
+                    OleDbCommand OleDbcommand = new OleDbCommand(query, _connOledb);
+                    int iAccessRowCount = OleDbcommand.ExecuteNonQuery();
+
+                    if (iSqlRowCount > 0 && iAccessRowCount > 0)
                     {
                         Status status = new Status();
                         status.Messages = new Messages();
@@ -487,6 +543,7 @@ namespace org.iringtools.sdk.sql
                 finally
                 {
                     disconnectSqL();
+                    disconnectAccess();
                 }
             }
             return response;
@@ -758,7 +815,7 @@ namespace org.iringtools.sdk.sql
             string status = string.Empty;
             try
             {
-                ConnectToExcel();
+                ConnectToAccess();
 
                 DataTable dataTable = _connOledb.GetOleDbSchemaTable(OleDbSchemaGuid.Tables, new object[] { null, null, null, "TABLE" });
                 foreach (DataRow tablerow in dataTable.Rows)
@@ -924,7 +981,7 @@ namespace org.iringtools.sdk.sql
                 List<string> SQLtableNames = LoadSQLTable();
                 List<string> AccesstableNames = new List<string>();
 
-                ConnectToExcel();
+                ConnectToAccess();
                 DataTable dt = _connOledb.GetSchema("tables");
                 foreach (DataRow row in dt.Rows)
                 {
@@ -1058,7 +1115,7 @@ namespace org.iringtools.sdk.sql
             throw new NotImplementedException();
         }
 
-        private void ConnectToExcel()
+        private void ConnectToAccess()
         {
             if (_connOledb == null || _connOledb.State == ConnectionState.Closed)
             {
