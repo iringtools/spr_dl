@@ -1,4 +1,4 @@
-<databaseDictionary xmlns="http://www.iringtools.org/library" xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+<dataDictionary xmlns="http://www.iringtools.org/library" xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
 	<dataObjects>
 		<dataObject>
 			<tableName>spool_proxy</tableName>
@@ -183,11 +183,8 @@
 			<dataRelationships/>
 		</dataObject>
 	</dataObjects>
-	<picklists/>
+	<picklists i:nil="true"/>
 	<enableSearch>false</enableSearch>
-	<enableSummary>false</enableSummary>
+	<enableSummary>true</enableSummary>
 	<dataVersion i:nil="true"/>
-	<provider>MDB</provider>
-	<connectionString>eSG2pvUoFTzYazUWrUwbWCwl9Bb5NiTpSGBuyAmYhg3eNBKDbbN8LnzXnSKiWxkqQU7lfqI1p6H3Jw3M+vosx8WfqWAHsfe5iqMdHhxbgZ4=</connectionString>
-	<schemaName>dbo</schemaName>
-</databaseDictionary>
+</dataDictionary>

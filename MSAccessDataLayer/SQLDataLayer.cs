@@ -36,6 +36,9 @@ namespace org.iringtools.sdk.sql
         private string _providerName;
         private StaticDust.Configuration.AppSettingsReader _sprSettings;
         private static readonly ILog logger = LogManager.GetLogger(typeof(SQLDataLayer));
+        private int Spool_Index = 0;
+        private Dictionary<int, string> _newProperties = new Dictionary<int, string>();
+        private bool IsSpoolPropertyAdded = false;
 
         public SQLDataLayer(AdapterSettings settings)
             : base(settings)
@@ -52,17 +55,17 @@ namespace org.iringtools.sdk.sql
 
             _appConfigXML = String.Format("{0}{1}.{2}.config", _xmlPath, _projectName, _applicationName);
             _sprSettings = new StaticDust.Configuration.AppSettingsReader(_appConfigXML);
-            _dbConnectionString = _sprSettings["dbconnection"].ToString();
+            _dbConnectionString = EncryptionUtility.Decrypt(_sprSettings["dbconnection"].ToString());
             _providerName = _sprSettings["mdbprovider"].ToString();
             _mdbConnectionString = String.Format("Provider={0};Data Source={1}", _providerName, _mdbFileName);
-            
+
             //Response response = ReverseRefresh();  //calling reverse refresh
         }
 
         public override DatabaseDictionary GetDatabaseDictionary()
         {
             _dictionary = Utility.Read<DatabaseDictionary>(String.Format("{0}{1}DataBaseDictionary.{2}.{3}.xml", _baseDirectory, _xmlPath, _projectName, _applicationName));
-            string connStr = (_dictionary.ConnectionString);
+            string connStr = EncryptionUtility.Decrypt(_dictionary.ConnectionString);
             _conn = new SqlConnection(connStr);
             
             return _dictionary;
@@ -70,32 +73,65 @@ namespace org.iringtools.sdk.sql
 
         public override DataDictionary GetDictionary()
         {
-            string Connectionstring = string.Empty;
-
-            string path = String.Format("{0}{1}DataDictionary.{2}.{3}.xml", _baseDirectory, _xmlPath, _projectName, _applicationName);
             try
             {
+                string path = String.Format("{0}{1}DataDictionary.{2}.{3}.xml", _baseDirectory, _xmlPath, _projectName, _applicationName);
+
                 if ((File.Exists(path)))
                 {
                     dynamic DataDictionary = Utility.Read<DataDictionary>(path);
                     _dataDictionary = Utility.Read<DataDictionary>(path);
                     return _dataDictionary;
                 }
-                else
+
+                DataDictionary dataDictionary = new DataDictionary();
+                string configPath = String.Format("{0}Configuration.{1}.{2}.xml", _baseDirectory + _xmlPath, _projectName, _applicationName);
+                DataDictionary configDictionary = File.Exists(configPath) ? Utility.Read<DataDictionary>(configPath) : null;
+
+                if (configDictionary != null)
                 {
-                    List<string> tableNames = LoadDataTable();
-                    _dataDictionary = LoadDataObjects(tableNames);
+                    dataDictionary.dataObjects = configDictionary.dataObjects;
+
+                    _dataDictionary = dataDictionary;
 
                     DatabaseDictionary _databaseDictionary = new DatabaseDictionary();
                     _databaseDictionary.dataObjects = _dataDictionary.dataObjects;
-                    _databaseDictionary.ConnectionString = _dbConnectionString;
+                    _databaseDictionary.ConnectionString = EncryptionUtility.Encrypt(_dbConnectionString);
                     _databaseDictionary.Provider = "MDB";
                     _databaseDictionary.SchemaName = "dbo";
 
                     Utility.Write<DatabaseDictionary>(_databaseDictionary, String.Format("{0}{1}DataBaseDictionary.{2}.{3}.xml", _baseDirectory, _xmlPath, _projectName, _applicationName));
                     Utility.Write<DataDictionary>(_dataDictionary, String.Format("{0}{1}DataDictionary.{2}.{3}.xml", _baseDirectory, _xmlPath, _projectName, _applicationName));
-                    return _dataDictionary;
                 }
+
+                return _dataDictionary;
+
+                //string Connectionstring = string.Empty;
+
+                //string path = String.Format("{0}{1}DataDictionary.{2}.{3}.xml", _baseDirectory, _xmlPath, _projectName, _applicationName);
+                //try
+                //{
+                //    if ((File.Exists(path)))
+                //    {
+                //        dynamic DataDictionary = Utility.Read<DataDictionary>(path);
+                //        _dataDictionary = Utility.Read<DataDictionary>(path);
+                //        return _dataDictionary;
+                //    }
+                //    else
+                //    {
+                //        List<string> tableNames = LoadDataTable();
+                //        _dataDictionary = LoadDataObjects(tableNames);
+
+                //        DatabaseDictionary _databaseDictionary = new DatabaseDictionary();
+                //        _databaseDictionary.dataObjects = _dataDictionary.dataObjects;
+                //        _databaseDictionary.ConnectionString = _dbConnectionString;
+                //        _databaseDictionary.Provider = "MDB";
+                //        _databaseDictionary.SchemaName = "dbo";
+
+                //        Utility.Write<DatabaseDictionary>(_databaseDictionary, String.Format("{0}{1}DataBaseDictionary.{2}.{3}.xml", _baseDirectory, _xmlPath, _projectName, _applicationName));
+                //        Utility.Write<DataDictionary>(_dataDictionary, String.Format("{0}{1}DataDictionary.{2}.{3}.xml", _baseDirectory, _xmlPath, _projectName, _applicationName));
+                //        return _dataDictionary;
+                //    }
             }
             catch
             {
@@ -373,6 +409,23 @@ namespace org.iringtools.sdk.sql
 
                 _adapter.Update(dataSet, tableName);
 
+                //Spool Properties needs to be added once.
+                if (!IsSpoolPropertyAdded)
+                {
+                    AddSpoolProperties();
+                }
+
+                //For each row in proxy table update Label,Label name and Label Values.
+                DataTable datatable = new DataTable();
+                datatable = dataTables[0];
+                foreach (DataRow row in datatable.Rows)
+                {
+                    UpdateOnEveryPost(row);
+                }
+
+
+                // Don't update Access here as Spool is only in SQL not in Access.
+                /*
                 // Updating Access
                 ConnectToAccess();
                 OleDbDataAdapter Oledbadapter = new OleDbDataAdapter();
@@ -389,7 +442,7 @@ namespace org.iringtools.sdk.sql
                 }
 
                 int i = Oledbadapter.Update(OledbdataSet, tableName);
-
+                */
                 status = "success";
             }
             catch(Exception ex)
@@ -409,6 +462,132 @@ namespace org.iringtools.sdk.sql
             }
             
             return response;
+        }
+
+        private void UpdateOnEveryPost(DataRow row)
+        {
+            try
+            {
+                ConnectToSqL();
+                ConnectToAccess();
+
+                var list = (from dProperties in _dataDictionary.dataObjects[0].keyProperties
+                            select dProperties).ToList();
+
+                string tag = list[0].keyPropertyName;
+                string Tagvalue = row[tag].ToString();
+
+                string query = "select linkage_index from labels inner join label_values on labels.label_value_index = label_values.label_value_index"
+                                 + " where label_values.label_value =" + Tagvalue
+                                 + " and labels.label_name_index = " + Spool_Index;
+
+                SqlCommand comm = new SqlCommand(query, _conn);
+                SqlDataAdapter da = new SqlDataAdapter(comm);
+                DataTable dt = new DataTable();
+                da.Fill(dt);
+
+                // List of linkage indexes ... 
+                if (dt.Rows.Count > 0)
+                {
+                    OleDbCommand commOledb = null;
+                    foreach (KeyValuePair<int, string> keyVal in _newProperties)
+                    {
+                        // Inserting in Label Value...
+                        query = "SELECT MAX (label_value_index)+1 FROM label_values";
+                        comm = new SqlCommand(query, _conn);
+                        int iLastValueIndex = (Int32)comm.ExecuteScalar();
+
+
+                        string val = row[keyVal.Value].ToString();
+                        query = "select count(*) from label_values where label_value= " + val;
+                        comm = new SqlCommand(query, _conn);
+                        int count = (Int32)comm.ExecuteScalar();
+
+                        //If value for new properties not found in label_values , insert it.
+                        if (count == 0)
+                        {
+                            double lblValNumeric = ConvertToDouble(val);
+                            query = "insert into label_values (label_value_index,label_value, label_value_numeric) values ( " +
+                                     iLastValueIndex + "," + val + "," + lblValNumeric + " )"; // Numeric conversion .
+
+                            comm = new SqlCommand(query, _conn);
+                            comm.ExecuteNonQuery();
+
+                            //Insert into Access simultaneously - Start
+                            commOledb = new OleDbCommand(query, _connOledb);
+                            commOledb.ExecuteNonQuery();
+                            //Insert into Access  simultaneously - End
+
+                            iLastValueIndex++;
+                        }
+
+                        //Inserting into Label ... 
+                        int lable_line_count = 0;
+                        foreach (DataRow linkageRow in dt.Rows)
+                        {
+
+                            query = "select Max(label_line_number)+1 from labels where linkage_index= " + linkageRow["linkage_index"];
+                            comm = new SqlCommand(query, _conn);
+                            lable_line_count = (Int32)comm.ExecuteScalar();
+
+
+                            query = "Insert into labels (linkage_index,label_name_index,label_value_index,label_line_number,extended_label) values ( " +
+                                     linkageRow["linkage_index"] + "," + keyVal.Key + "," + val + "," + lable_line_count + ", 0)";
+
+                            comm = new SqlCommand(query, _conn);
+                            comm.ExecuteNonQuery();
+
+                            //Insert into Access simultaneously - Start
+                            commOledb = new OleDbCommand(query, _connOledb);
+                            commOledb.ExecuteNonQuery();
+                            //Insert into Access  simultaneously - End
+                        }
+
+                    }
+
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Info("Error Occured while updating the Label and its associated Label tables" + ex.Message);
+                throw ex;
+            }
+            finally
+            {
+                disconnectSqL();
+                disconnectAccess();
+            }
+        }
+
+
+        /// <summary>
+        /// Handling label_value_numeric
+        /// </summary>
+        public static Double ConvertToDouble(string s)
+        {
+            try
+            {
+                string result = "";
+                System.Text.RegularExpressions.Regex reg = new System.Text.RegularExpressions.Regex("[1-9][0-9,.]*");
+                var arr = reg.Match(s).Value.Split('.');
+
+                if (arr.Length == 1)
+                    result = arr[0];
+                else
+                    result = arr[0] + "." + arr[1];
+
+                result = result.Trim('.');
+
+                if (String.IsNullOrWhiteSpace(result))
+                    return 0;
+
+                return Convert.ToDouble(result);
+            }
+            catch (Exception ex)
+            {
+                logger.Info("Error occured in ConvertToDouble for label_value_numeric"+ex.Message);
+                return 0;
+            }
         }
 
         public override Response DeleteDataTable(string tableName, string whereClause)
@@ -804,6 +983,7 @@ namespace org.iringtools.sdk.sql
         {
            // RefreshSqLDataBase();
             Response response = CreateCacheAndFill();
+            CreateSpoolinCache();
             return response;
         }
 
@@ -969,6 +1149,91 @@ namespace org.iringtools.sdk.sql
                 });
             }
             return response;
+        }
+
+        private bool CreateSpoolinCache()
+        {
+            try
+            {
+                if (_dictionary == null)
+                {
+                    _dictionary = GetDatabaseDictionary();
+                }
+
+                StringBuilder sb = new StringBuilder();
+                foreach (DataObject dataobject in _dictionary.dataObjects)
+                {
+                    string tableName = dataobject.tableName;
+                    string query = string.Empty;
+                    string vInheritColumns = string.Empty;
+
+                    foreach (DataProperty property in dataobject.dataProperties)
+                    {
+                        string isNullable = string.Empty;
+                        if (property.isNullable)
+                            isNullable = "NULL";
+                        else
+                            isNullable = "NOT NULL";
+
+                        if (property.dataType == DataType.String)
+                        {
+                            query = "[" + property.propertyName + "] [varchar] (" + property.dataLength + ") " + isNullable + ",";
+                        }
+                        else if (property.dataType == DataType.DateTime)
+                        {
+                            query = "[" + property.propertyName + "] [DATETIME] " + isNullable + ",";
+                        }
+                        else if (property.dataType == DataType.Int32 || property.dataType == DataType.Boolean) // Access saves booleans in 0 &1.
+                        {
+                            query = "[" + property.propertyName + "] [INT] (" + property.dataLength + ") " + isNullable + ",";
+                        }
+
+                        sb.Append(query);
+                    }
+
+                    string sKeys = string.Empty;
+                    foreach (KeyProperty key in dataobject.keyProperties)
+                    {
+                        sKeys += key.keyPropertyName + ",";
+                    }
+
+                    if (!string.IsNullOrEmpty(sKeys))
+                    {
+                        sKeys = sKeys.Substring(0, sKeys.LastIndexOf(','));
+                        sKeys = "PRIMARY KEY (" + sKeys + " )";
+                        sb.Append(sKeys);
+                        vInheritColumns = sb.ToString();
+                    }
+                    else
+                    {
+                        vInheritColumns = sb.ToString(0, sb.Length - 1);
+                    }
+
+                    ConnectToSqL();
+                    SqlCommand sqlcomm = new SqlCommand();
+                    sqlcomm.Connection = _conn;
+
+                    // First, dropping the table if it exists. 
+                    sqlcomm.CommandText = string.Format(SqlConstant.DROP_DB, tableName);
+                    sqlcomm.ExecuteNonQuery();
+
+                    // Second, Creating the table in the cache.
+                    sqlcomm.CommandText = "CREATE TABLE [dbo].[" + tableName + "] (" + vInheritColumns + ")";
+                    sqlcomm.ExecuteNonQuery();
+
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Info("Error occured while creating the spool in cache :   " + ex.Message);
+                return false;
+            }
+            finally
+            {
+                disconnectSqL();
+            }
+
+            return true;
         }
 
         public Response ReverseRefresh()
@@ -1148,5 +1413,80 @@ namespace org.iringtools.sdk.sql
                 _conn.Close();
             }
         }
+
+        private void AddSpoolProperties()
+        {
+            try
+            {
+                ConnectToSqL();
+                string InitialQuery = "select label_name_index from label_names	where label_name = 'Spool'";
+
+                SqlCommand comm = new SqlCommand(InitialQuery, _conn);
+                SqlDataReader reader = comm.ExecuteReader();
+
+                int lblNameIndex = 0;
+                while (reader.Read())
+                {
+                    lblNameIndex =Convert.ToInt32(reader["label_name_index"]);
+                    Spool_Index = lblNameIndex;
+                    break;
+                }
+
+                if (lblNameIndex != 0)
+                {
+
+                    InitialQuery = "select MAX(label_name_index)+1 FROM label_names";
+                    comm = new SqlCommand(InitialQuery, _conn);
+                    int iLastlabel_nameCount = (Int32)comm.ExecuteScalar();
+
+                    var list = from dProperties in _dataDictionary.dataObjects[0].dataProperties
+                               select dProperties;
+
+                    // Getting all spool Properties.
+                    foreach (var property in list)
+                    {
+                        InitialQuery = "select count(*) FROM label_names where label_name =" + property.columnName;
+                        comm = new SqlCommand(InitialQuery, _conn);
+                        int count = (Int32)comm.ExecuteScalar();
+
+                        // If Property not found, Plz insert it.
+                        if (count == 0)
+                        {
+                            InitialQuery = "Insert into label_names (label_name_index,label_names) values ( " + iLastlabel_nameCount + "," + property.columnName + " )";
+                            comm = new SqlCommand(InitialQuery, _conn);
+                            comm.ExecuteNonQuery();
+
+
+                            // Insert into mbd simultaneously  - START
+                            ConnectToAccess();                           
+                            OleDbCommand cmmdOledb = new OleDbCommand(InitialQuery, _connOledb);
+                            cmmdOledb.ExecuteNonQuery();
+                            // Insert into mbd simultaneously  - END
+
+                            _newProperties.Add(iLastlabel_nameCount, property.columnName);
+                            iLastlabel_nameCount++;
+                        }
+
+                    }
+                    IsSpoolPropertyAdded = true; // One time Spool Properties added.
+                }
+                else
+                {
+                    throw new Exception("Spool not found in the label_names");
+                }
+                
+            }
+            catch (Exception ex)
+            {
+                logger.Info(ex.Message);
+                throw ex;
+            }
+            finally
+            {
+                disconnectSqL();
+                disconnectAccess();
+            }
+        }
+
     }
 }
