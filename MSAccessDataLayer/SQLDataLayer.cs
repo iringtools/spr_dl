@@ -38,7 +38,7 @@ namespace org.iringtools.sdk.sql
         private static readonly ILog logger = LogManager.GetLogger(typeof(SQLDataLayer));
         private int Spool_Index = 0;
         private Dictionary<int, string> _newProperties = new Dictionary<int, string>();
-        private bool IsSpoolPropertyAdded = false;
+        private bool _IsSpoolPropertyAdded = false;
 
         public SQLDataLayer(AdapterSettings settings)
             : base(settings)
@@ -410,7 +410,7 @@ namespace org.iringtools.sdk.sql
                 _adapter.Update(dataSet, tableName);
 
                 //Spool Properties needs to be added once.
-                if (!IsSpoolPropertyAdded)
+                if (!_IsSpoolPropertyAdded)
                 {
                     AddSpoolProperties();
                 }
@@ -493,7 +493,7 @@ namespace org.iringtools.sdk.sql
                     foreach (KeyValuePair<int, string> keyVal in _newProperties)
                     {
                         // Inserting in Label Value...
-                        query = "SELECT MAX (label_value_index)+1 FROM label_values";
+                        query = "SELECT ISNULL(MAX(label_value_index),0)+1 FROM label_values";
                         comm = new SqlCommand(query, _conn);
                         int iLastValueIndex = (Int32)comm.ExecuteScalar();
 
@@ -518,7 +518,13 @@ namespace org.iringtools.sdk.sql
                             commOledb.ExecuteNonQuery();
                             //Insert into Access  simultaneously - End
 
-                            iLastValueIndex++;
+                            //iLastValueIndex++;
+                        }
+                        else
+                        {
+                            query = "select Top 1 label_value_index from label_values where label_value= " + val;
+                            comm = new SqlCommand(query, _conn);
+                            iLastValueIndex = (Int32)comm.ExecuteScalar();
                         }
 
                         //Inserting into Label ... 
@@ -526,13 +532,13 @@ namespace org.iringtools.sdk.sql
                         foreach (DataRow linkageRow in dt.Rows)
                         {
 
-                            query = "select Max(label_line_number)+1 from labels where linkage_index= " + linkageRow["linkage_index"];
+                            query = "select ISNULL(Max(label_line_number),0)+1 from labels where linkage_index= " + linkageRow["linkage_index"];
                             comm = new SqlCommand(query, _conn);
                             lable_line_count = (Int32)comm.ExecuteScalar();
 
 
                             query = "Insert into labels (linkage_index,label_name_index,label_value_index,label_line_number,extended_label) values ( " +
-                                     linkageRow["linkage_index"] + "," + keyVal.Key + "," + val + "," + lable_line_count + ", 0)";
+                                     linkageRow["linkage_index"] + "," + keyVal.Key + "," + iLastValueIndex + "," + lable_line_count + ", 0)";
 
                             comm = new SqlCommand(query, _conn);
                             comm.ExecuteNonQuery();
@@ -1435,13 +1441,14 @@ namespace org.iringtools.sdk.sql
                 if (lblNameIndex != 0)
                 {
 
-                    InitialQuery = "select MAX(label_name_index)+1 FROM label_names";
+                    InitialQuery = "select ISNULL(MAX(label_name_index),0)+1 FROM label_names";
                     comm = new SqlCommand(InitialQuery, _conn);
                     int iLastlabel_nameCount = (Int32)comm.ExecuteScalar();
 
                     var list = from dProperties in _dataDictionary.dataObjects[0].dataProperties
                                select dProperties;
 
+                    _newProperties = new Dictionary<int, string>();
                     // Getting all spool Properties.
                     foreach (var property in list)
                     {
@@ -1468,7 +1475,7 @@ namespace org.iringtools.sdk.sql
                         }
 
                     }
-                    IsSpoolPropertyAdded = true; // One time Spool Properties added.
+                    _IsSpoolPropertyAdded = true; // One time Spool Properties added.
                 }
                 else
                 {
