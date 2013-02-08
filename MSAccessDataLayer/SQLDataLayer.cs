@@ -38,7 +38,7 @@ namespace org.iringtools.sdk.spr
         private StaticDust.Configuration.AppSettingsReader _sprSettings;
         private static readonly ILog logger = LogManager.GetLogger(typeof(SQLDataLayer));
         private int Spool_Index = 0;
-        private Dictionary<int, string> _newProperties = new Dictionary<int, string>();
+        private Dictionary<int, DataProperty> _newProperties = new Dictionary<int, DataProperty>();
         private bool _IsSpoolPropertyAdded = false;
 
         public SQLDataLayer(AdapterSettings settings)
@@ -511,7 +511,7 @@ namespace org.iringtools.sdk.spr
                 if (dt.Rows.Count > 0)
                 {
                     OleDbCommand commOledb = null;
-                    foreach (KeyValuePair<int, string> keyVal in _newProperties)
+                    foreach (KeyValuePair<int, DataProperty> keyVal in _newProperties)
                     {
                         // Inserting in Label Value...
                         query = "SELECT ISNULL(MAX(label_value_index),0)+1 FROM label_values";
@@ -519,7 +519,7 @@ namespace org.iringtools.sdk.spr
                         int iLastValueIndex = (Int32)comm.ExecuteScalar();
 
 
-                        string val = row[keyVal.Value].ToString();
+                        string val = row[keyVal.Value.columnName].ToString();
                         query = "select count(*) from label_values where label_value= '" + val +"'";
                         comm = new SqlCommand(query, _conn);
                         int count = (Int32)comm.ExecuteScalar();
@@ -1476,18 +1476,18 @@ namespace org.iringtools.sdk.spr
                     var list = from dProperties in _dataDictionary.dataObjects[0].dataProperties
                                select dProperties;
 
-                    _newProperties = new Dictionary<int, string>();
+                    _newProperties = new Dictionary<int, DataProperty>();
                     // Getting all spool Properties.
                     foreach (var property in list)
                     {
-                        InitialQuery = "select count(*) FROM label_names where label_name = '" + property.columnName+"'";
+                        InitialQuery = "select count(*) FROM label_names where label_name = '" + property.propertyName+"'";
                         comm = new SqlCommand(InitialQuery, _conn);
                         int count = (Int32)comm.ExecuteScalar();
 
                         // If Property not found, Plz insert it.
                         if (count == 0)
                         {
-                            InitialQuery = "Insert into label_names (label_name_index,label_name) values ( " + iLastlabel_nameCount + ", '" + property.columnName + "' )";
+                            InitialQuery = "Insert into label_names (label_name_index,label_name) values ( " + iLastlabel_nameCount + ", '" + property.propertyName + "' )";
                             comm = new SqlCommand(InitialQuery, _conn);
                             comm.ExecuteNonQuery();
 
@@ -1498,7 +1498,7 @@ namespace org.iringtools.sdk.spr
                             cmmdOledb.ExecuteNonQuery();
                             // Insert into mbd simultaneously  - END
 
-                            _newProperties.Add(iLastlabel_nameCount, property.columnName);
+                            _newProperties.Add(iLastlabel_nameCount, property);
                             iLastlabel_nameCount++;
                         }
 
