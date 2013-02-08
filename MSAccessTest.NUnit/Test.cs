@@ -13,6 +13,7 @@ using StaticDust.Configuration;
 using System.Data.SqlClient;
 using System.Text;
 using System.Xml;
+using org.iringtools.sdk.spr;
 
 namespace org.iringtools.sdk.sql.test
 {
@@ -233,6 +234,45 @@ namespace org.iringtools.sdk.sql.test
             //
             response = _dataLayer.Delete(_modifiedObject, new List<string> { newIdentifier });
             Assert.AreEqual(response.Level, StatusLevel.Success);
+        }
+
+        [Test]
+        public void TestPost()
+        {
+          Response response = _dataLayer.RefreshAll();
+
+          IList<IDataObject> dataObjects = _dataLayer.Get("Spools", new DataFilter(), 25, 0);
+
+          dataObjects = new List<IDataObject>();
+
+          IDataObject dataObject = new GenericDataObject() { ObjectType = "Spools" };
+
+          dataObject.SetPropertyValue("Spool", "01EKG11PS02001");
+          dataObject.SetPropertyValue("WorkPackage", "WP1");
+          dataObject.SetPropertyValue("ConstructionStatus", "Go!");
+
+          dataObjects.Add(dataObject);
+
+          response = _dataLayer.Post(dataObjects);
+          
+          //string orgIdentifier = GetIdentifier(dataObjects[0]);
+
+          //string orgPropValue = Convert.ToString(dataObjects[0].GetPropertyValue(_modifiedProperty)) ?? String.Empty;
+          //int newPropValue = 101;
+
+          //// post data object with modified property
+          //dataObjects[0].SetPropertyValue(_modifiedProperty, newPropValue);
+          //Response response = _dataLayer.Post(dataObjects);
+          //Assert.AreEqual(response.Level, StatusLevel.Success);
+
+          //// verify post result
+          //dataObjects = _dataLayer.Get(_modifiedObject, new List<string> { orgIdentifier });
+          //Assert.AreEqual(dataObjects[0].GetPropertyValue(_modifiedProperty), newPropValue);
+
+          //// reset property to its orginal value
+          //dataObjects[0].SetPropertyValue(_modifiedProperty, orgPropValue);
+          //response = _dataLayer.Post(dataObjects);
+          //Assert.AreEqual(response.Level, StatusLevel.Success);
         }
 
         [Test]

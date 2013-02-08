@@ -1,1 +1,45 @@
-<dataDictionary xmlns="http://www.iringtools.org/library" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><dataObjects><dataObject><tableName>spool_proxy</tableName><objectNamespace>org.iringtools.adapter.datalayer.proj_Power_SPR_Test.SPR</objectNamespace><objectName>spool_proxy</objectName><keyDelimeter>_</keyDelimeter><keyProperties><keyProperty><keyPropertyName>TAGNO</keyPropertyName></keyProperty></keyProperties><dataProperties><dataProperty><columnName>TAGNO</columnName><propertyName>TAGNO</propertyName><dataType>String</dataType><dataLength>30</dataLength><isNullable>false</isNullable><keyType>assigned</keyType></dataProperty><dataProperty><columnName>UNIT_SUBDIV</columnName><propertyName>UNIT_SUBDIV</propertyName><dataType>String</dataType><dataLength>3</dataLength><isNullable>true</isNullable><keyType>unassigned</keyType></dataProperty><dataProperty><columnName>GROUPCODE</columnName><propertyName>GROUPCODE</propertyName><dataType>String</dataType><dataLength>5</dataLength><isNullable>true</isNullable><keyType>unassigned</keyType></dataProperty><dataProperty><columnName>B_SYS_LOC</columnName><propertyName>B_SYS_LOC</propertyName><dataType>String</dataType><dataLength>5</dataLength><isNullable>true</isNullable><keyType>unassigned</keyType></dataProperty><dataProperty><columnName>SEQCODE</columnName><propertyName>SEQCODE</propertyName><dataType>String</dataType><dataLength>12</dataLength><isNullable>true</isNullable><keyType>unassigned</keyType></dataProperty><dataProperty><columnName>SPOOLSEQNO</columnName><propertyName>SPOOLSEQNO</propertyName><dataType>String</dataType><dataLength>3</dataLength><isNullable>true</isNullable><keyType>unassigned</keyType></dataProperty><dataProperty><columnName>CLIENTSYSLOC</columnName><propertyName>CLIENTSYSLOC</propertyName><dataType>String</dataType><dataLength>3</dataLength><isNullable>true</isNullable><keyType>unassigned</keyType></dataProperty><dataProperty><columnName>LINESEQNO</columnName><propertyName>LINESEQNO</propertyName><dataType>String</dataType><dataLength>5</dataLength><isNullable>true</isNullable><keyType>unassigned</keyType></dataProperty><dataProperty><columnName>VREMARKS</columnName><propertyName>VREMARKS</propertyName><dataType>String</dataType><dataLength>48</dataLength><isNullable>true</isNullable><keyType>unassigned</keyType></dataProperty><dataProperty><columnName>VPCMRK</columnName><propertyName>VPCMRK</propertyName><dataType>String</dataType><dataLength>20</dataLength><isNullable>true</isNullable><keyType>unassigned</keyType></dataProperty><dataProperty><columnName>ABV_BEL_RACK</columnName><propertyName>ABV_BEL_RACK</propertyName><dataType>String</dataType><dataLength>11</dataLength><isNullable>true</isNullable><keyType>unassigned</keyType></dataProperty><dataProperty><columnName>PUNCHCOMPL</columnName><propertyName>PUNCHCOMPL</propertyName><dataType>DateTime</dataType><dataLength>8</dataLength><isNullable>true</isNullable><keyType>unassigned</keyType></dataProperty><dataProperty><columnName>WELDDATE</columnName><propertyName>WELDDATE</propertyName><dataType>DateTime</dataType><dataLength>8</dataLength><isNullable>true</isNullable><keyType>unassigned</keyType></dataProperty><dataProperty><columnName>ELTDATE</columnName><propertyName>ELTDATE</propertyName><dataType>DateTime</dataType><dataLength>8</dataLength><isNullable>true</isNullable><keyType>unassigned</keyType></dataProperty><dataProperty><columnName>FIELDFABCOMPL</columnName><propertyName>FIELDFABCOMPL</propertyName><dataType>DateTime</dataType><dataLength>8</dataLength><isNullable>true</isNullable><keyType>unassigned</keyType></dataProperty><dataProperty><columnName>RIGG_ELEV18</columnName><propertyName>RIGG_ELEV18</propertyName><dataType>DateTime</dataType><dataLength>8</dataLength><isNullable>true</isNullable><keyType>unassigned</keyType></dataProperty><dataProperty><columnName>RIGG_ELEV</columnName><propertyName>RIGG_ELEV</propertyName><dataType>DateTime</dataType><dataLength>8</dataLength><isNullable>true</isNullable><keyType>unassigned</keyType></dataProperty><dataProperty><columnName>STAGEDATE</columnName><propertyName>STAGEDATE</propertyName><dataType>DateTime</dataType><dataLength>8</dataLength><isNullable>true</isNullable><keyType>unassigned</keyType></dataProperty><dataProperty><columnName>DELIVER</columnName><propertyName>DELIVER</propertyName><dataType>DateTime</dataType><dataLength>8</dataLength><isNullable>true</isNullable><keyType>unassigned</keyType></dataProperty><dataProperty><columnName>ENGR_REL_ISO</columnName><propertyName>ENGR_REL_ISO</propertyName><dataType>DateTime</dataType><dataLength>8</dataLength><isNullable>true</isNullable><keyType>unassigned</keyType></dataProperty><dataProperty><columnName>WORK_PKG</columnName><propertyName>WORK_PKG</propertyName><dataType>String</dataType><dataLength>25</dataLength><isNullable>true</isNullable><keyType>unassigned</keyType></dataProperty></dataProperties><dataRelationships/></dataObject></dataObjects><picklists/><enableSearch>false</enableSearch><enableSummary>false</enableSummary><dataVersion i:nil="true"/></dataDictionary>
+<dataDictionary xmlns="http://www.iringtools.org/library" xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+  <dataObjects>
+    <dataObject>
+      <tableName>SPOOL_PROXY_VIEW</tableName>
+      <objectName>Spools</objectName>
+      <keyDelimeter>_</keyDelimeter>
+      <keyProperties>
+        <keyProperty>
+          <keyPropertyName>Spool</keyPropertyName>
+        </keyProperty>
+      </keyProperties>
+      <dataProperties>
+        <dataProperty>
+          <columnName>TAGNO</columnName>
+          <propertyName>Spool</propertyName>
+          <dataType>String</dataType>
+          <dataLength>30</dataLength>
+          <isNullable>false</isNullable>
+          <keyType>assigned</keyType>
+        </dataProperty>
+        <dataProperty>
+          <columnName>CONSTRUCTION_STATUS</columnName>
+          <propertyName>ConstrutionStatus</propertyName>
+          <dataType>String</dataType>
+          <dataLength>1</dataLength>
+          <isNullable>true</isNullable>
+          <keyType>unassigned</keyType>
+        </dataProperty>
+        <dataProperty>
+          <columnName>WORK_PKG</columnName>
+          <propertyName>WorkPackage</propertyName>
+          <dataType>String</dataType>
+          <dataLength>25</dataLength>
+          <isNullable>true</isNullable>
+          <keyType>unassigned</keyType>
+        </dataProperty>
+      </dataProperties>
+      <dataRelationships/>
+    </dataObject>
+  </dataObjects>
+  <picklists/>
+  <enableSearch>false</enableSearch>
+  <enableSummary>false</enableSummary>
+  <dataVersion i:nil="true"/>
+</dataDictionary>

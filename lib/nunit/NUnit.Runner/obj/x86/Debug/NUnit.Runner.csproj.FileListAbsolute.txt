@@ -34,3 +34,6 @@ C:\Users\jaestrad\Documents\Visual Studio 2010\Projects\MSAccess-master\lib\nuni
 C:\Users\jaestrad\Documents\Visual Studio 2010\Projects\MSAccess-master\lib\nunit\NUnit.Runner\bin\Debug\nunit.core.interfaces.dll
 C:\Users\jaestrad\Documents\Visual Studio 2010\Projects\MSAccess-master\lib\nunit\NUnit.Runner\bin\Debug\nunit.uiexception.dll
 C:\Users\jaestrad\Documents\Visual Studio 2010\Projects\MSAccess-master\lib\nunit\NUnit.Runner\obj\x86\Debug\ResolveAssemblyReference.cache
+C:\Users\rpdecarl\Documents\GitHub\spr_dl\lib\nunit\NUnit.Runner\bin\Debug\NUnit.Runner.exe.config
+C:\Users\rpdecarl\Documents\GitHub\spr_dl\lib\nunit\NUnit.Runner\obj\x86\Debug\NUnit.Runner.exe
+C:\Users\rpdecarl\Documents\GitHub\spr_dl\lib\nunit\NUnit.Runner\obj\x86\Debug\NUnit.Runner.pdb

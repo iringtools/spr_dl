@@ -31,9 +31,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="iRINGLibrary, Version=3.0.0.4264, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="iRINGLibrary, Version=2.4.0.5309, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\lib\iring-tools\iRINGLibrary.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\iring-tools\branches\2.4.x\Libraries\iRINGLibrary\Desktop\bin\Debug\iRINGLibrary.dll</HintPath>
     </Reference>
     <Reference Include="nunit.framework, Version=2.5.9.10348, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -50,9 +50,9 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
-    <Reference Include="UtilityLibrary, Version=2.1.0.2980, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="UtilityLibrary, Version=3.0.0.4264, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\lib\iring-tools\UtilityLibrary.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\iring-tools\branches\2.4.x\Libraries\iRINGLibrary\Desktop\bin\Debug\UtilityLibrary.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -64,7 +64,6 @@
     <Content Include="App_Data\BindingConfiguration.12345_000.SQL.xml" />
     <Content Include="App_Data\DatabaseDictionary.12345_000.ABC.xml" />
     <Content Include="App_Data\DataBaseDictionary.SPR.1234.xml" />
-    <Content Include="App_Data\DataDictionary.12345_000.SQL.xml" />
     <Content Include="App_Data\DataDictionary.SPR.1234.xml" />
     <Content Include="App_Data\DataDictionary.SQL.xml" />
   </ItemGroup>

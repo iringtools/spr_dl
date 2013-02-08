@@ -11,9 +11,10 @@ using System.Xml.Linq;
 using log4net;
 using System.Data.OleDb;
 using System.IO;
+using org.iringtools.sdk.sql;
 
 
-namespace org.iringtools.sdk.sql
+namespace org.iringtools.sdk.spr
 {
     public class SQLDataLayer : BaseSQLDataLayer
     {
@@ -264,7 +265,7 @@ namespace org.iringtools.sdk.sql
             string qrySeparator = "";
             string separator = "";
             IList<string> keyProperties = new List<string>();
-            DataObject dataObject = _dictionary.dataObjects.Where<DataObject>(p => p.tableName == tableName).FirstOrDefault();
+            DataObject dataObject = _dataDictionary.dataObjects.Where<DataObject>(p => p.tableName == tableName).FirstOrDefault();
             keyProperties = (from p in dataObject.keyProperties
                              select p.keyPropertyName).ToList<string>();
             string tempQry = string.Empty;
@@ -273,11 +274,14 @@ namespace org.iringtools.sdk.sql
             if (keyProperties.Count > 1)
             {
                 delimiter = dataObject.keyDelimeter;
-
+                
                 foreach (string prop in keyProperties)
                 {
+                  string keyColumn = (from p in _dataObjectDefinition.dataProperties
+                                      where p.propertyName == prop
+                                      select p.columnName).FirstOrDefault();
 
-                    tempQry += prop + " in (";
+                  tempQry += keyColumn + " in (";
                     foreach (string identifier in identifiers)
                     {
                         string[] idArray = null;
@@ -304,6 +308,10 @@ namespace org.iringtools.sdk.sql
             }
             else
             {
+              string keyColumn = (from p in _dataObjectDefinition.dataProperties
+                                  where p.propertyName == keyProperties[0] 
+                                  select p.columnName).FirstOrDefault();
+
                 StringBuilder idString = new StringBuilder();
                 string diff = "";
                 foreach (string identifier in identifiers)
@@ -312,7 +320,7 @@ namespace org.iringtools.sdk.sql
                     diff = ",";
 
                 }
-                tempQry = keyProperties[0] + " in (" + idString + ")";
+                tempQry = keyColumn + " in (" + idString + ")";
 
             }
             try
@@ -342,22 +350,28 @@ namespace org.iringtools.sdk.sql
 
         public override DataTable GetDataTable(string tableName, string whereClause, long start, long limit)
         {
-            List<string> keys = (from p in _dictionary.dataObjects
-                                 where p.objectName == tableName
-                                 select p.keyProperties.FirstOrDefault().keyPropertyName).ToList();
+            
 
-            string key = keys[0];
+            _dataObjectDefinition = (from d in _dataDictionary.dataObjects
+                                     where d.tableName == tableName
+                                   select d).FirstOrDefault();
+
+            KeyProperty key = _dataObjectDefinition.keyProperties[0];
             string query = string.Empty;
+
+            string keyColumn = (from p in _dataObjectDefinition.dataProperties
+                                where p.propertyName == key.keyPropertyName
+                                select p.columnName).FirstOrDefault();
 
             if (string.IsNullOrEmpty(whereClause))
             {
-                query = "select * from (SELECT *, ROW_NUMBER() OVER (order by " + key + ") AS RN FROM " + tableName +
+              query = "select * from (SELECT *, ROW_NUMBER() OVER (order by " + keyColumn + ") AS RN FROM " + tableName +
                         ") As " + tableName + " where RN >" + start + " and " + "RN <=" +(start + limit);
             
             }
             else
             {
-                query = "select * from (SELECT *, ROW_NUMBER() OVER (order by " + key + ") AS RN FROM " + tableName +
+              query = "select * from (SELECT *, ROW_NUMBER() OVER (order by " + keyColumn + ") AS RN FROM " + tableName +
                         ") As " + tableName + whereClause + " and RN >" + start + " and " + "RN <=" + (start + limit); 
             }
 
@@ -409,7 +423,7 @@ namespace org.iringtools.sdk.sql
 
                 _adapter.Update(dataSet, tableName);
 
-                //Spool Properties needs to be added once.
+                //Spool Properties needs to be added once per Page.
                 if (!_IsSpoolPropertyAdded)
                 {
                     AddSpoolProperties();
@@ -989,7 +1003,7 @@ namespace org.iringtools.sdk.sql
         {
            // RefreshSqLDataBase();
             Response response = CreateCacheAndFill();
-            CreateSpoolinCache();
+            //CreateSpoolinCache();
             return response;
         }
 
@@ -1425,6 +1439,8 @@ namespace org.iringtools.sdk.sql
             try
             {
                 ConnectToSqL();
+                //hard coded key query
+                //TODO: get label name fomr configuration
                 string InitialQuery = "select label_name_index from label_names	where label_name = 'Spool'";
 
                 SqlCommand comm = new SqlCommand(InitialQuery, _conn);
@@ -1434,13 +1450,15 @@ namespace org.iringtools.sdk.sql
                 while (reader.Read())
                 {
                     lblNameIndex =Convert.ToInt32(reader["label_name_index"]);
+                    //TODO: variable should be called Key_Index
                     Spool_Index = lblNameIndex;
                     break;
                 }
 
+                //if key label exsists
                 if (lblNameIndex != 0)
                 {
-
+                    //make properties
                     InitialQuery = "select ISNULL(MAX(label_name_index),0)+1 FROM label_names";
                     comm = new SqlCommand(InitialQuery, _conn);
                     int iLastlabel_nameCount = (Int32)comm.ExecuteScalar();
