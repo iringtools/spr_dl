@@ -406,6 +406,7 @@ namespace org.iringtools.sdk.spr
             {
                 // Updating SQL
                 ConnectToSqL();
+                /*
                 string tableName = dataTables.First().TableName;
                 string query = "SELECT * FROM " + tableName;
                 _adapter = new SqlDataAdapter();
@@ -422,6 +423,7 @@ namespace org.iringtools.sdk.spr
                 }
 
                 _adapter.Update(dataSet, tableName);
+                */
 
                 //Spool Properties needs to be added once per Page.
                 if (!_IsSpoolPropertyAdded)
@@ -952,12 +954,12 @@ namespace org.iringtools.sdk.spr
 
         public override long GetCount(string tableName, string whereClause)
         {
-            long count = 0;
+            //    long count = 0;
             string query = string.Empty;
             if (!string.IsNullOrEmpty(whereClause))
                 query = "select count(*) from " + tableName + whereClause;
             else
-                query = "select count(*) from" + tableName;
+                query = "select count(*) from " + tableName;
             try
             {
                 ConnectToSqL();
@@ -967,11 +969,13 @@ namespace org.iringtools.sdk.spr
                 SqlCommand sqlCmd = new SqlCommand();
                 sqlCmd.CommandText = query;
                 sqlCmd.Connection = _conn;
-                _adapter = new SqlDataAdapter(sqlCmd);
-                DataSet dataSet = new DataSet();
-                _adapter.Fill(dataSet, tableName);
-                DataTable dataTable = dataSet.Tables[tableName];
-                return dataTable.Rows.Count;
+                int count = (Int32)sqlCmd.ExecuteScalar();
+                return count;
+                //_adapter = new SqlDataAdapter(sqlCmd);
+                //DataSet dataSet = new DataSet();
+                //_adapter.Fill(dataSet, tableName);
+                //DataTable dataTable = dataSet.Tables[tableName];
+                //return dataTable.Rows.Count;
             }
             catch (Exception ex)
             {
