@@ -487,14 +487,19 @@ namespace org.iringtools.sdk.spr
                 ConnectToSqL();
                 ConnectToAccess();
 
-                var list = (from dProperties in _dataDictionary.dataObjects[0].keyProperties
+                var list1 = (from dProperties in _dataDictionary.dataObjects[0].keyProperties
                             select dProperties).ToList();
 
-                string tag = list[0].keyPropertyName;
+                var list = (from dProperties in _dataDictionary.dataObjects[0].dataProperties
+                            where dProperties.propertyName == list1[0].keyPropertyName
+                            select dProperties).ToList();
+
+                
+                string tag = list[0].columnName;
                 string Tagvalue = row[tag].ToString();
 
                 string query = "select linkage_index from labels inner join label_values on labels.label_value_index = label_values.label_value_index"
-                                 + " where label_values.label_value =" + Tagvalue
+                                 + " where label_values.label_value = '" + Tagvalue +"'" 
                                  + " and labels.label_name_index = " + Spool_Index;
 
                 SqlCommand comm = new SqlCommand(query, _conn);
@@ -515,7 +520,7 @@ namespace org.iringtools.sdk.spr
 
 
                         string val = row[keyVal.Value].ToString();
-                        query = "select count(*) from label_values where label_value= " + val;
+                        query = "select count(*) from label_values where label_value= '" + val +"'";
                         comm = new SqlCommand(query, _conn);
                         int count = (Int32)comm.ExecuteScalar();
 
@@ -524,7 +529,7 @@ namespace org.iringtools.sdk.spr
                         {
                             double lblValNumeric = ConvertToDouble(val);
                             query = "insert into label_values (label_value_index,label_value, label_value_numeric) values ( " +
-                                     iLastValueIndex + "," + val + "," + lblValNumeric + " )"; // Numeric conversion .
+                                     iLastValueIndex + ",'" + val + "','" + lblValNumeric + "' )"; // Numeric conversion .
 
                             comm = new SqlCommand(query, _conn);
                             comm.ExecuteNonQuery();
@@ -538,7 +543,7 @@ namespace org.iringtools.sdk.spr
                         }
                         else
                         {
-                            query = "select Top 1 label_value_index from label_values where label_value= " + val;
+                            query = "select Top 1 label_value_index from label_values where label_value= '" + val +"'";
                             comm = new SqlCommand(query, _conn);
                             iLastValueIndex = (Int32)comm.ExecuteScalar();
                         }
@@ -1458,6 +1463,7 @@ namespace org.iringtools.sdk.spr
                     Spool_Index = lblNameIndex;
                     break;
                 }
+                reader.Close();
 
                 //if key label exsists
                 if (lblNameIndex != 0)
@@ -1474,14 +1480,14 @@ namespace org.iringtools.sdk.spr
                     // Getting all spool Properties.
                     foreach (var property in list)
                     {
-                        InitialQuery = "select count(*) FROM label_names where label_name =" + property.columnName;
+                        InitialQuery = "select count(*) FROM label_names where label_name = '" + property.columnName+"'";
                         comm = new SqlCommand(InitialQuery, _conn);
                         int count = (Int32)comm.ExecuteScalar();
 
                         // If Property not found, Plz insert it.
                         if (count == 0)
                         {
-                            InitialQuery = "Insert into label_names (label_name_index,label_names) values ( " + iLastlabel_nameCount + "," + property.columnName + " )";
+                            InitialQuery = "Insert into label_names (label_name_index,label_name) values ( " + iLastlabel_nameCount + ", '" + property.columnName + "' )";
                             comm = new SqlCommand(InitialQuery, _conn);
                             comm.ExecuteNonQuery();
 
