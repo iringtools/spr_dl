@@ -85,7 +85,7 @@ namespace PostAfterExchange
 
             dataObjects.Add(dataObject);
 
-            Response response = _dataLayer.Post(dataObjects);
+             response = _dataLayer.Post(dataObjects);
 
         }
     }
