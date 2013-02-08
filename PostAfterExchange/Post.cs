@@ -71,7 +71,7 @@ namespace PostAfterExchange
 
         public void TestPost()
         {
-            //Response response = _dataLayer.RefreshAll();
+            Response response = _dataLayer.RefreshAll();
 
             IList<IDataObject> dataObjects = _dataLayer.Get("Spools", new DataFilter(), 25, 0);
 
