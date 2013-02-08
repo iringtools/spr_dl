@@ -75,17 +75,17 @@ namespace PostAfterExchange
 
             IList<IDataObject> dataObjects = _dataLayer.Get("Spools", new DataFilter(), 25, 0);
 
-            dataObjects = new List<IDataObject>();
+            //dataObjects = new List<IDataObject>();
 
-            IDataObject dataObject = new GenericDataObject() { ObjectType = "Spools" };
+            //IDataObject dataObject = new GenericDataObject() { ObjectType = "Spools" };
 
-            dataObject.SetPropertyValue("Spool", "01EKG11PS02001");
-            dataObject.SetPropertyValue("WorkPackage", "WP1");
-            dataObject.SetPropertyValue("ConstructionStatus", "Go!");
+            //dataObject.SetPropertyValue("Spool", "01EKG11PS02001");
+            //dataObject.SetPropertyValue("WorkPackage", "WP1");
+            //dataObject.SetPropertyValue("ConstructionStatus", "Go!");
 
-            dataObjects.Add(dataObject);
+            //dataObjects.Add(dataObject);
 
-             response = _dataLayer.Post(dataObjects);
+            response = _dataLayer.Post(dataObjects);
 
         }
     }

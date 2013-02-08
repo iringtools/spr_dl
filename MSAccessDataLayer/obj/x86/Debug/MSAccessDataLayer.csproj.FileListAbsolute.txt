@@ -16,3 +16,13 @@ C:\Users\rpdecarl\Documents\GitHub\spr_dl\MSAccessDataLayer\bin\Debug\iRINGLibra
 C:\Users\rpdecarl\Documents\GitHub\spr_dl\MSAccessDataLayer\bin\Debug\UtilityLibrary.pdb
 C:\Users\rpdecarl\Documents\GitHub\spr_dl\MSAccessDataLayer\bin\Debug\Newtonsoft.Json.pdb
 C:\Users\rpdecarl\Documents\GitHub\spr_dl\MSAccessDataLayer\bin\Debug\Newtonsoft.Json.xml
+C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\MSAccessDataLayer\bin\Debug\SQLDataLayer.dll
+C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\MSAccessDataLayer\bin\Debug\SQLDataLayer.pdb
+C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\MSAccessDataLayer\bin\Debug\log4net.dll
+C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\MSAccessDataLayer\bin\Debug\Ninject.dll
+C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\MSAccessDataLayer\bin\Debug\StaticDust.Configuration.dll
+C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\MSAccessDataLayer\bin\Debug\log4net.xml
+C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\MSAccessDataLayer\bin\Debug\Ninject.xml
+C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\MSAccessDataLayer\obj\x86\Debug\ResolveAssemblyReference.cache
+C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\MSAccessDataLayer\obj\x86\Debug\SQLDataLayer.dll
+C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\MSAccessDataLayer\obj\x86\Debug\SQLDataLayer.pdb

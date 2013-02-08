@@ -58,6 +58,7 @@ namespace org.iringtools.sdk.sql.test
 
             _dataLayer = new SQLDataLayer(_adapterSettings);
             _objectDefinition = GetObjectDefinition(_modifiedObject);
+            _dataLayer.GetDictionary();
             //_dataLayer.RefreshAll();
         }
 

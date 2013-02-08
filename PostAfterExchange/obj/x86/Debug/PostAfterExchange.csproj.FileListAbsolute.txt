@@ -1,0 +1,13 @@
+C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\PostAfterExchange\obj\x86\Debug\ResolveAssemblyReference.cache
+C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\PostAfterExchange\bin\Debug\PostAfterExchange.exe.config
+C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\PostAfterExchange\bin\Debug\PostAfterExchange.exe
+C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\PostAfterExchange\bin\Debug\PostAfterExchange.pdb
+C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\PostAfterExchange\bin\Debug\iRINGLibrary.dll
+C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\PostAfterExchange\bin\Debug\SQLDataLayer.dll
+C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\PostAfterExchange\bin\Debug\StaticDust.Configuration.dll
+C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\PostAfterExchange\bin\Debug\UtilityLibrary.dll
+C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\PostAfterExchange\bin\Debug\log4net.dll
+C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\PostAfterExchange\bin\Debug\SQLDataLayer.pdb
+C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\PostAfterExchange\bin\Debug\log4net.xml
+C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\PostAfterExchange\obj\x86\Debug\PostAfterExchange.exe
+C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\PostAfterExchange\obj\x86\Debug\PostAfterExchange.pdb
