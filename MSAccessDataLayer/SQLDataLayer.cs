@@ -37,9 +37,10 @@ namespace org.iringtools.sdk.spr
         private string _providerName;
         private StaticDust.Configuration.AppSettingsReader _sprSettings;
         private static readonly ILog logger = LogManager.GetLogger(typeof(SQLDataLayer));
-        private int Spool_Index = 0;
+        private int Key_Index = 0;
         private Dictionary<int, DataProperty> _newProperties = new Dictionary<int, DataProperty>();
         private bool _IsSpoolPropertyAdded = false;
+        private string _labelname = string.Empty;
 
         public SQLDataLayer(AdapterSettings settings)
             : base(settings)
@@ -59,8 +60,7 @@ namespace org.iringtools.sdk.spr
             _dbConnectionString = EncryptionUtility.Decrypt(_sprSettings["dbconnection"].ToString());
             _providerName = _sprSettings["mdbprovider"].ToString();
             _mdbConnectionString = String.Format("Provider={0};Data Source={1}", _providerName, _mdbFileName);
-
-            //Response response = ReverseRefresh();  //calling reverse refresh
+            _labelname = _sprSettings["labelname"].ToString();
         }
 
         public override DatabaseDictionary GetDatabaseDictionary()
@@ -500,7 +500,7 @@ namespace org.iringtools.sdk.spr
 
                 string query = "select linkage_index from labels inner join label_values on labels.label_value_index = label_values.label_value_index"
                                  + " where label_values.label_value = '" + Tagvalue +"'" 
-                                 + " and labels.label_name_index = " + Spool_Index;
+                                 + " and labels.label_name_index = " + Key_Index;
 
                 SqlCommand comm = new SqlCommand(query, _conn);
                 SqlDataAdapter da = new SqlDataAdapter(comm);
@@ -538,8 +538,6 @@ namespace org.iringtools.sdk.spr
                             commOledb = new OleDbCommand(query, _connOledb);
                             commOledb.ExecuteNonQuery();
                             //Insert into Access  simultaneously - End
-
-                            //iLastValueIndex++;
                         }
                         else
                         {
@@ -1011,13 +1009,13 @@ namespace org.iringtools.sdk.spr
         public override Response RefreshAll()
         {
            // RefreshSqLDataBase();
-            Response response = CreateCacheAndFill();
-            //CreateSpoolinCache();
+            Response response = RefreshSqLDataBase();
+            CreateSpoolinCache();
             return response;
         }
 
 
-        private Response CreateCacheAndFill()
+        private Response RefreshSqLDataBase()
         {
             
             Response response = new Response();
@@ -1450,7 +1448,7 @@ namespace org.iringtools.sdk.spr
                 ConnectToSqL();
                 //hard coded key query
                 //TODO: get label name fomr configuration
-                string InitialQuery = "select label_name_index from label_names	where label_name = 'Spool'";
+                string InitialQuery = "select label_name_index from label_names	where label_name = '" + _labelname +"'";
 
                 SqlCommand comm = new SqlCommand(InitialQuery, _conn);
                 SqlDataReader reader = comm.ExecuteReader();
@@ -1460,7 +1458,7 @@ namespace org.iringtools.sdk.spr
                 {
                     lblNameIndex =Convert.ToInt32(reader["label_name_index"]);
                     //TODO: variable should be called Key_Index
-                    Spool_Index = lblNameIndex;
+                    Key_Index = lblNameIndex;
                     break;
                 }
                 reader.Close();

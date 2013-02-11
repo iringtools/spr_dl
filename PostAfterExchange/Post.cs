@@ -17,7 +17,6 @@ namespace PostAfterExchange
         private NameValueCollection _settings;
         private AdapterSettings _adapterSettings;
         private SQLDataLayer _dataLayer;
-        private DataObject _objectDefinition;
 
         public Post()
         {
@@ -26,7 +25,6 @@ namespace PostAfterExchange
             _settings["ProjectName"] = "12345_000";
             _settings["XmlPath"] = @".\App_Data\";
             _settings["ApplicationName"] = "SQL";
-            //_settings["TestMode"] = "WriteFiles";
 
             _baseDirectory = Directory.GetCurrentDirectory();
             _baseDirectory = _baseDirectory.Substring(0, _baseDirectory.LastIndexOf("\\bin"));
@@ -49,44 +47,14 @@ namespace PostAfterExchange
             }
 
             _dataLayer = new SQLDataLayer(_adapterSettings);
-            _objectDefinition = GetObjectDefinition("spool_proxy");
-        }
-
-        private DataObject GetObjectDefinition(string objectType)
-        {
-            DataDictionary dictionary = _dataLayer.GetDictionary();
-
-            if (dictionary.dataObjects != null)
-            {
-                foreach (DataObject dataObject in dictionary.dataObjects)
-                {
-                    if (dataObject.objectName.ToLower() == objectType.ToLower())
-                    {
-                        return dataObject;
-                    }
-                }
-            }
-            return null;
+            _dataLayer.GetDictionary();
         }
 
         public void TestPost()
         {
             Response response = _dataLayer.RefreshAll();
-
             IList<IDataObject> dataObjects = _dataLayer.Get("Spools", new DataFilter(), 25, 0);
-
-            //dataObjects = new List<IDataObject>();
-
-            //IDataObject dataObject = new GenericDataObject() { ObjectType = "Spools" };
-
-            //dataObject.SetPropertyValue("Spool", "01EKG11PS02001");
-            //dataObject.SetPropertyValue("WorkPackage", "WP1");
-            //dataObject.SetPropertyValue("ConstructionStatus", "Go!");
-
-            //dataObjects.Add(dataObject);
-
             response = _dataLayer.Post(dataObjects);
-
         }
     }
 }
