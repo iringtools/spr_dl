@@ -1010,7 +1010,7 @@ namespace org.iringtools.sdk.spr
         {
            // RefreshSqLDataBase();
             Response response = RefreshSqLDataBase();
-            CreateSpoolinCache();
+            //CreateSpoolinCache();
             return response;
         }
 
