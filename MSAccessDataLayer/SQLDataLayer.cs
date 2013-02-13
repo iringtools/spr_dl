@@ -519,8 +519,13 @@ namespace org.iringtools.sdk.spr
                         int iLastValueIndex = (Int32)comm.ExecuteScalar();
 
 
-                        string val = row[keyVal.Value.columnName].ToString();
-                        query = "select count(*) from label_values where label_value= '" + val +"'";
+                        string val = Convert.ToString(row[keyVal.Value.columnName]);
+                        if (val == null)
+                        {
+                            val = string.Empty;
+                        }
+                       
+                        query = "select count(*) from label_values where label_value= '" + val + "'";
                         comm = new SqlCommand(query, _conn);
                         int count = (Int32)comm.ExecuteScalar();
 
