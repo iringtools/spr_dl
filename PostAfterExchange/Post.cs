@@ -55,6 +55,7 @@ namespace PostAfterExchange
             Response response = _dataLayer.RefreshAll();
             IList<IDataObject> dataObjects = _dataLayer.Get("Spools", new DataFilter(), 25, 0);
             response = _dataLayer.Post(dataObjects);
+            _dataLayer.ReverseRefresh();
         }
     }
 }

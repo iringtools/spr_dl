@@ -39,7 +39,7 @@ namespace org.iringtools.sdk.spr
         private static readonly ILog logger = LogManager.GetLogger(typeof(SQLDataLayer));
         private int Key_Index = 0;
         private Dictionary<int, DataProperty> _newProperties = new Dictionary<int, DataProperty>();
-        private bool _IsSpoolPropertyAdded = false;
+        private bool _IsLabelPropertyAdded = false;
         private string _labelname = string.Empty;
 
         public SQLDataLayer(AdapterSettings settings)
@@ -426,9 +426,9 @@ namespace org.iringtools.sdk.spr
                 */
 
                 //Spool Properties needs to be added once per Page.
-                if (!_IsSpoolPropertyAdded)
+                if (!_IsLabelPropertyAdded)
                 {
-                    AddSpoolProperties();
+                    AddLabelProperties();
                 }
 
                 //For each row in proxy table update Label,Label name and Label Values.
@@ -436,9 +436,9 @@ namespace org.iringtools.sdk.spr
                 datatable = dataTables[0];
                 foreach (DataRow row in datatable.Rows)
                 {
-                    UpdateOnEveryPost(row);
+                    //UpdateOnEveryPost(row); Don't do it for every tag, just one time.
                 }
-
+                UpdateOnEveryPost(datatable.Rows[datatable.Rows.Count-1]);
 
                 // Don't update Access here as Spool is only in SQL not in Access.
                 /*
@@ -497,10 +497,13 @@ namespace org.iringtools.sdk.spr
                 
                 string tag = list[0].columnName;
                 string Tagvalue = row[tag].ToString();
+                //string query = "select linkage_index from labels inner join label_values on labels.label_value_index = label_values.label_value_index"
+                //               + " where label_values.label_value = '" + Tagvalue +"'" 
+                //               + " and labels.label_name_index = " + Key_Index;
 
-                string query = "select linkage_index from labels inner join label_values on labels.label_value_index = label_values.label_value_index"
-                                 + " where label_values.label_value = '" + Tagvalue +"'" 
-                                 + " and labels.label_name_index = " + Key_Index;
+                string query = "select linkage_index,label_value from labels inner join label_values on " +
+                               "labels.label_value_index = label_values.label_value_index " +
+                                "where labels.label_name_index =  " +Key_Index+ " order by label_value";  
 
                 SqlCommand comm = new SqlCommand(query, _conn);
                 SqlDataAdapter da = new SqlDataAdapter(comm);
@@ -550,17 +553,19 @@ namespace org.iringtools.sdk.spr
                             comm = new SqlCommand(query, _conn);
                             iLastValueIndex = (Int32)comm.ExecuteScalar();
                         }
-
+                        int iicount = 0;
                         //Inserting into Label ... 
                         int lable_line_count = 0;
+
+                        # region Replacing  with Stored Procedure
+                        /*
                         foreach (DataRow linkageRow in dt.Rows)
                         {
 
                             query = "select ISNULL(Max(label_line_number),0)+1 from labels where linkage_index= " + linkageRow["linkage_index"];
                             comm = new SqlCommand(query, _conn);
                             lable_line_count = (Int32)comm.ExecuteScalar();
-
-
+   
                             query = "Insert into labels (linkage_index,label_name_index,label_value_index,label_line_number,extended_label) values ( " +
                                      linkageRow["linkage_index"] + "," + keyVal.Key + "," + iLastValueIndex + "," + lable_line_count + ", 0)";
 
@@ -571,7 +576,18 @@ namespace org.iringtools.sdk.spr
                             commOledb = new OleDbCommand(query, _connOledb);
                             commOledb.ExecuteNonQuery();
                             //Insert into Access  simultaneously - End
+                            iicount++;
                         }
+                        */
+                        # endregion
+
+                        comm = new SqlCommand("UPDATESPR", _conn);
+                        comm.CommandType = CommandType.StoredProcedure;
+                        comm.Parameters.Add(new SqlParameter("key",keyVal.Key));
+                        comm.Parameters.Add(new SqlParameter("ValueIndex",iLastValueIndex));
+                        comm.Parameters.Add(new SqlParameter("SpoolIndex",Key_Index));
+                        comm.CommandTimeout = 1000;
+                        comm.ExecuteNonQuery();
 
                     }
 
@@ -1268,7 +1284,59 @@ namespace org.iringtools.sdk.spr
             return true;
         }
 
+        /// <summary>
+        /// Changed Method Just for Console App,Its only updating labels table.
+        /// </summary>
+        /// <returns></returns>
         public Response ReverseRefresh()
+        {
+            string status = string.Empty;
+            Response response = new Response();
+            try
+            {
+                ConnectToSqL();
+                ConnectToAccess();
+                //---- Bulk Update Labels
+
+                string q = "DELETE FROM labels";
+                OleDbCommand commandee = new OleDbCommand();
+                commandee.Connection = _connOledb;
+                commandee.CommandText = q;
+                commandee.ExecuteNonQuery();
+
+
+                q = "Insert INTO labels (linkage_index,label_name_index,label_value_index,label_line_number,extended_label) select linkage_index,label_name_index,label_value_index,label_line_number,extended_label FROM [ODBC;Description=Test;DRIVER=SQL Server;SERVER=Ashs91077\\iring;Database=SPR;User Id=SPR;Password=SPR].labels";
+                commandee = new OleDbCommand();
+                commandee.Connection = _connOledb;
+                commandee.CommandText = q;
+                commandee.ExecuteNonQuery();
+                //---- Bulk Update Labels - Completed.
+
+                status = "success";
+            }
+            catch (Exception ex)
+            {
+                logger.Info("Error occured while updating the Access tables and the data :   " + ex.Message);
+                throw ex;
+            }
+            finally
+            {
+                disconnectAccess();
+                disconnectSqL();
+                response.StatusList.Add(new Status
+                {
+                    Level = (status == "success") ? StatusLevel.Success : StatusLevel.Error,
+                    Messages = new org.iringtools.library.Messages { (status == "success") ? " Record updated successfully." : " Error occured while updated the access tables and the data" }
+                });
+            }
+            return response;
+        }
+
+        /// <summary>
+        /// Original one Method ... 
+        /// </summary>
+        /// <returns></returns>
+       /* public Response ReverseRefresh()
         {
             string status = string.Empty;
             Response response = new Response();
@@ -1279,6 +1347,7 @@ namespace org.iringtools.sdk.spr
                 List<string> AccesstableNames = new List<string>();
 
                 ConnectToAccess();
+
                 DataTable dt = _connOledb.GetSchema("tables");
                 foreach (DataRow row in dt.Rows)
                 {
@@ -1378,6 +1447,7 @@ namespace org.iringtools.sdk.spr
             }
             return response;
         }
+        */
 
         private List<string> LoadSQLTable()
         {
@@ -1446,13 +1516,14 @@ namespace org.iringtools.sdk.spr
             }
         }
 
-        private void AddSpoolProperties()
+        // Adding Spool Properties...
+        private void AddLabelProperties()
         {
             try
             {
                 ConnectToSqL();
                 //hard coded key query
-                //TODO: get label name fomr configuration
+                //TODO: get label name from configuration
                 string InitialQuery = "select label_name_index from label_names	where label_name = '" + _labelname +"'";
 
                 SqlCommand comm = new SqlCommand(InitialQuery, _conn);
@@ -1480,7 +1551,7 @@ namespace org.iringtools.sdk.spr
                                select dProperties;
 
                     _newProperties = new Dictionary<int, DataProperty>();
-                    // Getting all spool Properties.
+                    // Getting all Label(e.g. spool) Properties.
                     foreach (var property in list)
                     {
                         InitialQuery = "select count(*) FROM label_names where label_name = '" + property.propertyName+"'";
@@ -1506,11 +1577,11 @@ namespace org.iringtools.sdk.spr
                         }
 
                     }
-                    _IsSpoolPropertyAdded = true; // One time Spool Properties added.
+                    _IsLabelPropertyAdded = true; // One time Label(e.g. spool) Properties added.
                 }
                 else
                 {
-                    throw new Exception("Spool not found in the label_names");
+                    throw new Exception("Label " + _labelname + " not found in the label_names");
                 }
                 
             }

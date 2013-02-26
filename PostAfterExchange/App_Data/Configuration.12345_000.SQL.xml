@@ -20,7 +20,7 @@
 				</dataProperty>
 				<dataProperty>
 					<columnName>CONSTRUCTION_STATUS</columnName>
-					<propertyName>ConstrutionStatus</propertyName>
+					<propertyName>ConstructionStatus</propertyName>
 					<dataType>String</dataType>
 					<dataLength>1</dataLength>
 					<isNullable>true</isNullable>
