@@ -1225,15 +1225,15 @@ namespace org.iringtools.sdk.spr
 
                         if (property.dataType == DataType.String)
                         {
-                            query = "[" + property.propertyName + "] [varchar] (" + property.dataLength + ") " + isNullable + ",";
+                            query = "[" + property.columnName + "] [varchar] (" + property.dataLength + ") " + isNullable + ",";
                         }
                         else if (property.dataType == DataType.DateTime)
                         {
-                            query = "[" + property.propertyName + "] [DATETIME] " + isNullable + ",";
+                            query = "[" + property.columnName + "] [DATETIME] " + isNullable + ",";
                         }
                         else if (property.dataType == DataType.Int32 || property.dataType == DataType.Boolean) // Access saves booleans in 0 &1.
                         {
-                            query = "[" + property.propertyName + "] [INT] (" + property.dataLength + ") " + isNullable + ",";
+                            query = "[" + property.columnName + "] [INT] (" + property.dataLength + ") " + isNullable + ",";
                         }
 
                         sb.Append(query);
@@ -1242,7 +1242,12 @@ namespace org.iringtools.sdk.spr
                     string sKeys = string.Empty;
                     foreach (KeyProperty key in dataobject.keyProperties)
                     {
-                        sKeys += key.keyPropertyName + ",";
+                        var list = (from dProperties in _dataDictionary.dataObjects[0].dataProperties
+                                    where dProperties.propertyName == key.keyPropertyName
+                                    select dProperties).ToList();
+                        string TagNo = list[0].columnName;
+
+                        sKeys += TagNo + ",";
                     }
 
                     if (!string.IsNullOrEmpty(sKeys))
@@ -1594,6 +1599,37 @@ namespace org.iringtools.sdk.spr
             {
                 disconnectSqL();
                 disconnectAccess();
+            }
+        }
+
+        public void PopulateSpoolTable()
+        {
+            try
+            {
+                List<DataObject> obj = _dataDictionary.dataObjects;
+
+                DataTable datatable = new DataTable();
+                datatable.Columns.Add("column1");
+                datatable.Columns.Add("column2");
+
+                foreach (DataProperty prop in obj[0].dataProperties)
+                {
+                    DataRow _row = datatable.NewRow();
+                    _row["column1"] = prop.propertyName;
+                    _row["column2"] = prop.columnName;
+                    datatable.Rows.Add(_row);
+                }
+
+                ConnectToSqL();
+                SqlCommand comm = new SqlCommand("PopulateSPOOL", _conn);
+                comm.CommandType = CommandType.StoredProcedure;
+                comm.Parameters.Add(new SqlParameter("columnNames", datatable));
+                comm.CommandTimeout = 1000;
+                comm.ExecuteNonQuery();
+            }
+            catch (Exception e)
+            { 
+            
             }
         }
 

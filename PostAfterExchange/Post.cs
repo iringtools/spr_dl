@@ -57,5 +57,10 @@ namespace PostAfterExchange
             response = _dataLayer.Post(dataObjects);
             _dataLayer.ReverseRefresh();
         }
+
+        public void PopulateSpool()
+        {
+            _dataLayer.PopulateSpoolTable();
+        }
     }
 }

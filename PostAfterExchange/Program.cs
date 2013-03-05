@@ -12,7 +12,8 @@ namespace PostAfterExchange
           Console.WriteLine("SPR File Updater...");
 
             Post ObjPost = new Post();
-            ObjPost.TestPost();
+           // ObjPost.TestPost();
+           // ObjPost.PopulateSpool();
 
             Console.WriteLine("File Update complete.");
         }
