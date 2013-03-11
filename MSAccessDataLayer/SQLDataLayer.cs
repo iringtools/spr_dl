@@ -852,65 +852,7 @@ namespace org.iringtools.sdk.spr
             else
             {
                 return GetDataTable(tableName, identifiers);
-            }
-            /*
-            DataTable dataTable = new DataTable();
-            DataTable dTable = new DataTable(tableName);
-            string query = string.Empty;
-            string delimiter = string.Empty;
-            string[] idArray = null;
-            DataObject dataObject = _dictionary.dataObjects.Where<DataObject>(p => p.tableName == tableName).FirstOrDefault();
-            IList<string> keyProperties = keyProperties = (from p in dataObject.keyProperties
-                                                           select p.keyPropertyName).ToList<string>();
-            if (keyProperties.Count > 1)
-            {
-                delimiter = dataObject.keyDelimeter;
-            }
-            IList<string> idList = new List<string>();
-            if (identifiers != null)
-            {
-
-                int j = 0;
-                foreach (string identifier in identifiers)
-                {
-                    idList.Add(identifier);
-                    dataTable = GetDataTable(tableName, idList);
-                    idList.Clear();
-                    if (dataTable != null && dataTable.Rows != null)
-                    {
-                        if (dTable.Rows.Count == 0)
-                            dTable = dataTable.Clone();
-                        if (dataTable.Rows.Count > 0)
-                            dTable.Rows.Add(dataTable.Rows[j].ItemArray);
-                        else
-                        {
-                            DataRow drow = null;
-
-                            for (int i = 0; i < keyProperties.Count; i++)
-                            {
-                                if (identifier.Contains(delimiter.FirstOrDefault()))
-                                {
-                                    idArray = identifier.Split(delimiter.FirstOrDefault());
-                                }
-                                else if (keyProperties.Count == 1)
-                                {
-                                    idArray = identifier.Split();
-                                }
-                            }
-                            drow = dTable.NewRow();
-                            dTable.Rows.Add(drow);
-                            for (int i = 0; i < keyProperties.Count; i++)
-                            {
-                                drow[keyProperties[i]] = idArray[i];
-                                drow.AcceptChanges();
-                            }
-                        }
-                    }
-                    j++;
-                }
-
-            }
-            return dTable;*/
+            }           
         }
 
         public override DataTable GetRelatedDataTable(DataRow dataRow, string relatedTableName)
@@ -978,7 +920,6 @@ namespace org.iringtools.sdk.spr
 
         public override long GetCount(string tableName, string whereClause)
         {
-            //    long count = 0;
             string query = string.Empty;
             if (!string.IsNullOrEmpty(whereClause))
                 query = "select count(*) from " + tableName + whereClause;
@@ -995,11 +936,6 @@ namespace org.iringtools.sdk.spr
                 sqlCmd.Connection = _conn;
                 int count = (Int32)sqlCmd.ExecuteScalar();
                 return count;
-                //_adapter = new SqlDataAdapter(sqlCmd);
-                //DataSet dataSet = new DataSet();
-                //_adapter.Fill(dataSet, tableName);
-                //DataTable dataTable = dataSet.Tables[tableName];
-                //return dataTable.Rows.Count;
             }
             catch (Exception ex)
             {
@@ -1029,7 +965,6 @@ namespace org.iringtools.sdk.spr
 
         public override Response RefreshAll()
         {
-           // RefreshSqLDataBase();
             Response response = RefreshSqLDataBase();
             //CreateSpoolinCache();
             return response;
@@ -1309,8 +1244,36 @@ namespace org.iringtools.sdk.spr
                 commandee.CommandText = q;
                 commandee.ExecuteNonQuery();
 
+                // Creating the Connection to import data from SQL to Access db.
+                string server = string.Empty; string db = string.Empty;
+                string user = string.Empty; string pwd = string.Empty;
+                string sqlConnection = _dbConnectionString;
+                string[] connbit = sqlConnection.Split(';');
+                foreach (string bit in connbit)
+                {
+                    if (bit.ToLower().Contains("source"))
+                    {
+                        server = bit.Substring(bit.IndexOf("=") + 1);
+                    }
+                    else if (bit.ToLower().Contains("catalog"))
+                    {
+                        db = bit.Substring(bit.IndexOf("=") + 1);
+                    }
+                    else if (bit.ToLower().Contains("user"))
+                    {
+                        user = bit.Substring(bit.IndexOf("=") + 1);
+                    }
+                    else if (bit.ToLower().Contains("password"))
+                    {
+                        pwd = bit.Substring(bit.IndexOf("=") + 1);
+                    }
+                }
 
-                q = "Insert INTO labels (linkage_index,label_name_index,label_value_index,label_line_number,extended_label) select linkage_index,label_name_index,label_value_index,label_line_number,extended_label FROM [ODBC;Description=Test;DRIVER=SQL Server;SERVER=Ashs91077\\iring;Database=SPR;User Id=SPR;Password=SPR].labels";
+                string connSqlImport = "ODBC;Description=SqlToMdb;DRIVER=SQL Server;SERVER={0};Database={1};User Id={2};Password={3}";
+                connSqlImport = string.Format(connSqlImport, server, db, user, pwd);
+
+              //q = "Insert INTO labels (linkage_index,label_name_index,label_value_index,label_line_number,extended_label) select linkage_index,label_name_index,label_value_index,label_line_number,extended_label FROM [ODBC;Description=Test;DRIVER=SQL Server;SERVER=Ashs91077\\iring;Database=SPR;User Id=SPR;Password=SPR].labels";
+                q = "Insert INTO labels (linkage_index,label_name_index,label_value_index,label_line_number,extended_label) select linkage_index,label_name_index,label_value_index,label_line_number,extended_label FROM ["+connSqlImport+"].labels";
                 commandee = new OleDbCommand();
                 commandee.Connection = _connOledb;
                 commandee.CommandText = q;
