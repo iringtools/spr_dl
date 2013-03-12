@@ -429,6 +429,7 @@ namespace org.iringtools.sdk.spr
                 if (!_IsLabelPropertyAdded)
                 {
                     AddLabelProperties();
+                    AddlabelsOnLinkages();
                 }
 
                 //For each row in proxy table update Label,Label name and Label Values.
@@ -436,9 +437,9 @@ namespace org.iringtools.sdk.spr
                 datatable = dataTables[0];
                 foreach (DataRow row in datatable.Rows)
                 {
-                    //UpdateOnEveryPost(row); Don't do it for every tag, just one time.
+                   UpdateOnEveryPost(row); 
                 }
-                UpdateOnEveryPost(datatable.Rows[datatable.Rows.Count-1]);
+                //UpdateOnEveryPost(datatable.Rows[datatable.Rows.Count-1]);
 
                 // Don't update Access here as Spool is only in SQL not in Access.
                 /*
@@ -497,28 +498,28 @@ namespace org.iringtools.sdk.spr
                 
                 string tag = list[0].columnName;
                 string Tagvalue = row[tag].ToString();
-                //string query = "select linkage_index from labels inner join label_values on labels.label_value_index = label_values.label_value_index"
-                //               + " where label_values.label_value = '" + Tagvalue +"'" 
-                //               + " and labels.label_name_index = " + Key_Index;
+                ////string query = "select linkage_index from labels inner join label_values on labels.label_value_index = label_values.label_value_index"
+                ////               + " where label_values.label_value = '" + Tagvalue +"'" 
+                ////               + " and labels.label_name_index = " + Key_Index;
 
-                string query = "select linkage_index,label_value from labels inner join label_values on " +
-                               "labels.label_value_index = label_values.label_value_index " +
-                                "where labels.label_name_index =  " +Key_Index+ " order by label_value";  
+                //string query = "select linkage_index,label_value from labels inner join label_values on " +
+                //               "labels.label_value_index = label_values.label_value_index " +
+                //                "where labels.label_name_index =  " +Key_Index+ " order by label_value";  
 
-                SqlCommand comm = new SqlCommand(query, _conn);
-                SqlDataAdapter da = new SqlDataAdapter(comm);
-                DataTable dt = new DataTable();
-                da.Fill(dt);
+                //SqlCommand comm = new SqlCommand(query, _conn);
+                //SqlDataAdapter da = new SqlDataAdapter(comm);
+                //DataTable dt = new DataTable();
+                //da.Fill(dt);
 
-                // List of linkage indexes ... 
-                if (dt.Rows.Count > 0)
-                {
+                //// List of linkage indexes ... 
+                //if (dt.Rows.Count > 0)
+                //{
                     OleDbCommand commOledb = null;
                     foreach (KeyValuePair<int, DataProperty> keyVal in _newProperties)
                     {
                         // Inserting in Label Value...
-                        query = "SELECT ISNULL(MAX(label_value_index),0)+1 FROM label_values";
-                        comm = new SqlCommand(query, _conn);
+                        string query = "SELECT ISNULL(MAX(label_value_index),0)+1 FROM label_values";
+                        SqlCommand comm = new SqlCommand(query, _conn);
                         int iLastValueIndex = (Int32)comm.ExecuteScalar();
 
 
@@ -553,43 +554,51 @@ namespace org.iringtools.sdk.spr
                             comm = new SqlCommand(query, _conn);
                             iLastValueIndex = (Int32)comm.ExecuteScalar();
                         }
-                        int iicount = 0;
-                        //Inserting into Label ... 
-                        int lable_line_count = 0;
+                        //int iicount = 0;
+                        ////Inserting into Label ... 
+                        //int lable_line_count = 0;
 
-                        # region Replacing  with Stored Procedure
-                        /*
-                        foreach (DataRow linkageRow in dt.Rows)
-                        {
+                        //# region Replacing  with Stored Procedure
+                        ///*
+                        //foreach (DataRow linkageRow in dt.Rows)
+                        //{
 
-                            query = "select ISNULL(Max(label_line_number),0)+1 from labels where linkage_index= " + linkageRow["linkage_index"];
-                            comm = new SqlCommand(query, _conn);
-                            lable_line_count = (Int32)comm.ExecuteScalar();
+                        //    query = "select ISNULL(Max(label_line_number),0)+1 from labels where linkage_index= " + linkageRow["linkage_index"];
+                        //    comm = new SqlCommand(query, _conn);
+                        //    lable_line_count = (Int32)comm.ExecuteScalar();
    
-                            query = "Insert into labels (linkage_index,label_name_index,label_value_index,label_line_number,extended_label) values ( " +
-                                     linkageRow["linkage_index"] + "," + keyVal.Key + "," + iLastValueIndex + "," + lable_line_count + ", 0)";
+                        //    query = "Insert into labels (linkage_index,label_name_index,label_value_index,label_line_number,extended_label) values ( " +
+                        //             linkageRow["linkage_index"] + "," + keyVal.Key + "," + iLastValueIndex + "," + lable_line_count + ", 0)";
 
-                            comm = new SqlCommand(query, _conn);
-                            comm.ExecuteNonQuery();
+                        //    comm = new SqlCommand(query, _conn);
+                        //    comm.ExecuteNonQuery();
 
-                            //Insert into Access simultaneously - Start
-                            commOledb = new OleDbCommand(query, _connOledb);
-                            commOledb.ExecuteNonQuery();
-                            //Insert into Access  simultaneously - End
-                            iicount++;
-                        }
-                        */
-                        # endregion
+                        //    //Insert into Access simultaneously - Start
+                        //    commOledb = new OleDbCommand(query, _connOledb);
+                        //    commOledb.ExecuteNonQuery();
+                        //    //Insert into Access  simultaneously - End
+                        //    iicount++;
+                        //}
+                        //*/
+                        //# endregion
 
-                        comm = new SqlCommand("UPDATESPR", _conn);
+                        //comm = new SqlCommand("UPDATESPR", _conn);
+                        //comm.CommandType = CommandType.StoredProcedure;
+                        //comm.Parameters.Add(new SqlParameter("key",keyVal.Key));
+                        //comm.Parameters.Add(new SqlParameter("ValueIndex",iLastValueIndex));
+                        //comm.Parameters.Add(new SqlParameter("SpoolIndex",Key_Index));
+                        //comm.CommandTimeout = 1000;
+                        //comm.ExecuteNonQuery();
+
+                        comm = new SqlCommand("UPDATE_LabelValues", _conn);
                         comm.CommandType = CommandType.StoredProcedure;
-                        comm.Parameters.Add(new SqlParameter("key",keyVal.Key));
-                        comm.Parameters.Add(new SqlParameter("ValueIndex",iLastValueIndex));
-                        comm.Parameters.Add(new SqlParameter("SpoolIndex",Key_Index));
+                        comm.Parameters.Add(new SqlParameter("Tag", Tagvalue));
+                        comm.Parameters.Add(new SqlParameter("labelNameIndex", keyVal.Key));
+                        comm.Parameters.Add(new SqlParameter("labelValueIndex", iLastValueIndex));
                         comm.CommandTimeout = 1000;
                         comm.ExecuteNonQuery();
 
-                    }
+                //    }
 
                 }
             }
@@ -1596,5 +1605,33 @@ namespace org.iringtools.sdk.spr
             }
         }
 
+        private void AddlabelsOnLinkages()
+        {
+            try
+            {
+                ConnectToSqL();
+
+                DataTable datatable = new DataTable();
+                datatable.Columns.Add("labelNameIndexes");
+
+                foreach (int newLabelIndex in _newProperties.Keys)
+                {
+                    DataRow _row = datatable.NewRow();
+                    _row["labelNameIndexes"] = newLabelIndex;
+                    datatable.Rows.Add(_row);
+                }
+
+                SqlCommand comm = new SqlCommand("UPDATE_LabelNames", _conn);
+                comm.CommandType = CommandType.StoredProcedure;
+                comm.Parameters.Add(new SqlParameter("SpoolIndex", Key_Index));
+                //comm.Parameters.Add(new SqlParameter("valueIndex", iLastValueIndex));
+                comm.Parameters.Add(new SqlParameter("tblLabelIndexes", datatable));
+                comm.CommandTimeout = 1000;
+                comm.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            { 
+            }
+        }
     }
 }
