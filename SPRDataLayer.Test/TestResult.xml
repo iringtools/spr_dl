@@ -1,0 +1,95 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!--This file represents the results of running a test suite-->
+<test-results name="C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\SPRDataLayer.NUnit\SPRDataLayer.NUnit.csproj" total="10" errors="0" failures="10" not-run="0" inconclusive="0" ignored="0" skipped="0" invalid="0" date="2013-03-13" time="16:24:22">
+  <environment nunit-version="2.5.9.10348" clr-version="4.0.30319.296" os-version="Microsoft Windows NT 6.1.7601 Service Pack 1" platform="Win32NT" cwd="C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\NUnit.Runner\bin\Debug" machine-name="NDHD203466" user="gdhamija" user-domain="IEAMS" />
+  <culture-info current-culture="en-US" current-uiculture="en-US" />
+  <test-suite type="Project" name="C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\SPRDataLayer.NUnit\SPRDataLayer.NUnit.csproj" executed="True" result="Failure" success="False" time="14.802" asserts="0">
+    <results>
+      <test-suite type="Assembly" name="C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\SPRDataLayer.NUnit\bin\Debug\ObjectDataLater.NUnit.dll" executed="True" result="Failure" success="False" time="14.799" asserts="0">
+        <results>
+          <test-suite type="Namespace" name="SPRdatalayer" executed="True" result="Failure" success="False" time="14.798" asserts="0">
+            <results>
+              <test-suite type="Namespace" name="Test" executed="True" result="Failure" success="False" time="14.722" asserts="0">
+                <results>
+                  <test-suite type="TestFixture" name="SPRDataLayerTest" executed="True" result="Error" success="False" time="14.721" asserts="0">
+                    <failure>
+                      <message><![CDATA[SetUp : System.TypeInitializationException : The type initializer for 'org.iringtools.adapter.AdapterSettings' threw an exception.
+  ----> System.IO.FileNotFoundException : Could not load file or assembly 'log4net, Version=1.2.10.0, Culture=neutral, PublicKeyToken=1b44e1d426115821' or one of its dependencies. The system cannot find the file specified.]]></message>
+                      <stack-trace><![CDATA[at org.iringtools.adapter.AdapterSettings..ctor()
+at SPRdatalayer.Test.SPRDataLayerTest..ctor() in C:\Users\GDHAMIJA\Documents\GitHub\spr_dl\SPRDataLayer.NUnit\Test.cs:line 63
+--FileNotFoundException
+at org.iringtools.adapter.AdapterSettings..cctor()
+]]></stack-trace>
+                    </failure>
+                    <results>
+                      <test-case name="SPRdatalayer.Test.SPRDataLayerTest.GetCount" executed="True" result="Failure" success="False" time="0.000" asserts="0">
+                        <failure>
+                          <message><![CDATA[TestFixtureSetUp failed in SPRDataLayerTest]]></message>
+                          <stack-trace />
+                        </failure>
+                      </test-case>
+                      <test-case name="SPRdatalayer.Test.SPRDataLayerTest.GetDictionary" executed="True" result="Failure" success="False" time="0.000" asserts="0">
+                        <failure>
+                          <message><![CDATA[TestFixtureSetUp failed in SPRDataLayerTest]]></message>
+                          <stack-trace />
+                        </failure>
+                      </test-case>
+                      <test-case name="SPRdatalayer.Test.SPRDataLayerTest.Read" executed="True" result="Failure" success="False" time="0.000" asserts="0">
+                        <failure>
+                          <message><![CDATA[TestFixtureSetUp failed in SPRDataLayerTest]]></message>
+                          <stack-trace />
+                        </failure>
+                      </test-case>
+                      <test-case name="SPRdatalayer.Test.SPRDataLayerTest.ReadWithFilter" executed="True" result="Failure" success="False" time="0.000" asserts="0">
+                        <failure>
+                          <message><![CDATA[TestFixtureSetUp failed in SPRDataLayerTest]]></message>
+                          <stack-trace />
+                        </failure>
+                      </test-case>
+                      <test-case name="SPRdatalayer.Test.SPRDataLayerTest.ReadWithIdentifiers" executed="True" result="Failure" success="False" time="0.000" asserts="0">
+                        <failure>
+                          <message><![CDATA[TestFixtureSetUp failed in SPRDataLayerTest]]></message>
+                          <stack-trace />
+                        </failure>
+                      </test-case>
+                      <test-case name="SPRdatalayer.Test.SPRDataLayerTest.ReadWithPaging" executed="True" result="Failure" success="False" time="0.000" asserts="0">
+                        <failure>
+                          <message><![CDATA[TestFixtureSetUp failed in SPRDataLayerTest]]></message>
+                          <stack-trace />
+                        </failure>
+                      </test-case>
+                      <test-case name="SPRdatalayer.Test.SPRDataLayerTest.TestPost" executed="True" result="Failure" success="False" time="0.000" asserts="0">
+                        <failure>
+                          <message><![CDATA[TestFixtureSetUp failed in SPRDataLayerTest]]></message>
+                          <stack-trace />
+                        </failure>
+                      </test-case>
+                      <test-case name="SPRdatalayer.Test.SPRDataLayerTest.TestPostWithAddAndDeleteByFilter" executed="True" result="Failure" success="False" time="0.000" asserts="0">
+                        <failure>
+                          <message><![CDATA[TestFixtureSetUp failed in SPRDataLayerTest]]></message>
+                          <stack-trace />
+                        </failure>
+                      </test-case>
+                      <test-case name="SPRdatalayer.Test.SPRDataLayerTest.TestPostWithAddAndDeleteByIdentifier" executed="True" result="Failure" success="False" time="0.000" asserts="0">
+                        <failure>
+                          <message><![CDATA[TestFixtureSetUp failed in SPRDataLayerTest]]></message>
+                          <stack-trace />
+                        </failure>
+                      </test-case>
+                      <test-case name="SPRdatalayer.Test.SPRDataLayerTest.TestPostWithUpdate" executed="True" result="Failure" success="False" time="0.000" asserts="0">
+                        <failure>
+                          <message><![CDATA[TestFixtureSetUp failed in SPRDataLayerTest]]></message>
+                          <stack-trace />
+                        </failure>
+                      </test-case>
+                    </results>
+                  </test-suite>
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+    </results>
+  </test-suite>
+</test-results>
