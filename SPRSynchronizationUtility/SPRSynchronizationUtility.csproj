@@ -39,7 +39,7 @@
       <HintPath>..\lib\iring-tools\iRINGLibrary.dll</HintPath>
     </Reference>
     <Reference Include="SPRDataLayer">
-      <HintPath>..\MSAccessDataLayer\bin\Debug\SPRDataLayer.dll</HintPath>
+      <HintPath>..\SPRDataLayer\bin\Debug\SPRDataLayer.dll</HintPath>
     </Reference>
     <Reference Include="StaticDust.Configuration">
       <HintPath>..\lib\configuration\StaticDust.Configuration.dll</HintPath>
