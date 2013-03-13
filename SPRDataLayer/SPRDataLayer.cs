@@ -549,7 +549,7 @@ namespace Bechtel.iRING.SPR
                     comm.Parameters.Add(new SqlParameter("Tag", Tagvalue));
                     comm.Parameters.Add(new SqlParameter("labelNameIndex", keyVal.Key));
                     comm.Parameters.Add(new SqlParameter("labelValueIndex", iLastValueIndex));
-                    comm.CommandTimeout = 1000;
+                    comm.CommandTimeout = 10000;
                     comm.ExecuteNonQuery();
                 }
             }
@@ -1578,7 +1578,7 @@ namespace Bechtel.iRING.SPR
                 comm.CommandType = CommandType.StoredProcedure;
                 comm.Parameters.Add(new SqlParameter("SpoolIndex", Key_Index));
                 comm.Parameters.Add(new SqlParameter("tblLabelIndexes", datatable));
-                comm.CommandTimeout = 1000;
+                comm.CommandTimeout = 10000;
                 comm.ExecuteNonQuery();
             }
             catch (Exception ex)
