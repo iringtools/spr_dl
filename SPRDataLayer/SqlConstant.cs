@@ -12,5 +12,7 @@ namespace Bechtel.iRING.SPR
         public const string CREATE_DB = "Create DATABASE [{0}]";
 
         public const string Get_tableName = "SELECT TABLE_NAME FROM information_schema.tables";
+
+        public const string IndexOn_tblLabels = "CREATE CLUSTERED INDEX SPRindex ON dbo.labels (linkage_index)";
     }
 }

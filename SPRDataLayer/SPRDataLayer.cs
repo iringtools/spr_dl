@@ -1052,6 +1052,12 @@ namespace Bechtel.iRING.SPR
                     sqlcomm.CommandText = "CREATE TABLE [dbo].[" + strSheetTableName + "] (" + vInheritColumns + ")";
                     sqlcomm.ExecuteNonQuery();
 
+                    if (strSheetTableName == "labels")
+                    {
+                        sqlcomm.CommandText = SqlConstant.IndexOn_tblLabels;
+                        sqlcomm.ExecuteNonQuery();
+                    }
+
                     OleDbCommand command = new OleDbCommand();
                     command.Connection = _connOledb;
                     DataTable tableColumns = _connOledb.GetOleDbSchemaTable(OleDbSchemaGuid.Columns, new object[] { null, null, strSheetTableName, null });
