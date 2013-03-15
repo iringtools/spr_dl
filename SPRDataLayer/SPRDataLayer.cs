@@ -366,14 +366,29 @@ namespace Bechtel.iRING.SPR
 
             if (string.IsNullOrEmpty(whereClause))
             {
-              query = "select * from (SELECT *, ROW_NUMBER() OVER (order by " + keyColumn + ") AS RN FROM " + tableName +
-                        ") As " + tableName + " where RN >" + start + " and " + "RN <=" +(start + limit);
-            
+                if (start == limit)
+                {
+                    query = "select * from (SELECT *, ROW_NUMBER() OVER (order by " + keyColumn + ") AS RN FROM " + tableName +
+                            ") As " + tableName ;
+                }
+                else
+                {
+                    query = "select * from (SELECT *, ROW_NUMBER() OVER (order by " + keyColumn + ") AS RN FROM " + tableName +
+                              ") As " + tableName + " where RN >" + start + " and " + "RN <=" + (start + limit);
+                }
             }
             else
             {
-              query = "select * from (SELECT *, ROW_NUMBER() OVER (order by " + keyColumn + ") AS RN FROM " + tableName +
-                        ") As " + tableName + whereClause + " and RN >" + start + " and " + "RN <=" + (start + limit); 
+                if (start == limit)
+                {
+                    query = "select * from (SELECT *, ROW_NUMBER() OVER (order by " + keyColumn + ") AS RN FROM " + tableName +
+                              ") As " + tableName + whereClause;
+                }
+                else
+                {
+                    query = "select * from (SELECT *, ROW_NUMBER() OVER (order by " + keyColumn + ") AS RN FROM " + tableName +
+                              ") As " + tableName + whereClause + " and RN >" + start + " and " + "RN <=" + (start + limit);
+                }
             }
 
             try
@@ -420,7 +435,7 @@ namespace Bechtel.iRING.SPR
                 datatable = dataTables[0];
                 foreach (DataRow row in datatable.Rows)
                 {
-                   UpdateOnEveryPost(row); 
+                   UpdateOnEveryPost(row);
                 }
                 
                 status = "success";
@@ -506,10 +521,6 @@ namespace Bechtel.iRING.SPR
                 foreach (KeyValuePair<int, DataProperty> keyVal in _newProperties)
                 {
                     // Inserting in Label Value...
-                    string query = "SELECT ISNULL(MAX(label_value_index),0)+1 FROM label_values";
-                    SqlCommand comm = new SqlCommand(query, _conn);
-                    int iLastValueIndex = (Int32)comm.ExecuteScalar();
-
 
                     string val = Convert.ToString(row[keyVal.Value.columnName]);
                     if (val == null)  // We cannot insert null so converting into blank.
@@ -517,40 +528,50 @@ namespace Bechtel.iRING.SPR
                         val = string.Empty;
                     }
 
-                    query = "select count(*) from label_values where label_value= '" + val + "'";
-                    comm = new SqlCommand(query, _conn);
-                    int count = (Int32)comm.ExecuteScalar();
-
-                    //If value for new properties not found in label_values , insert it.
-                    if (count == 0)
+                    if (!string.IsNullOrEmpty(val))  // If the value is not blank, only then we are updating the value else there is no need.because blank is already applied to new properties by default.
                     {
-                        double lblValNumeric = ConvertToDouble(val);  // Numeric conversion .
-                        query = "insert into label_values (label_value_index,label_value, label_value_numeric) values ( " +
-                                 iLastValueIndex + ",'" + val + "','" + lblValNumeric + "' )"; 
+                        string query = "SELECT ISNULL(MAX(label_value_index),0)+1 FROM label_values";
+                        SqlCommand comm = new SqlCommand(query, _conn);
+                        int iLastValueIndex = (Int32)comm.ExecuteScalar();
 
+
+                        query = "select count(*) from label_values where label_value= '" + val + "'";
                         comm = new SqlCommand(query, _conn);
+                        int count = (Int32)comm.ExecuteScalar();
+
+                        //If value for new properties not found in label_values , insert it.
+                        if (count == 0)
+                        {
+                            double lblValNumeric = ConvertToDouble(val);  // Numeric conversion .
+                            query = "insert into label_values (label_value_index,label_value, label_value_numeric) values ( " +
+                                     iLastValueIndex + ",'" + val + "','" + lblValNumeric + "' )";
+
+                            comm = new SqlCommand(query, _conn);
+                            comm.ExecuteNonQuery();
+
+                            //Insert into Access simultaneously - Start
+                            commOledb = new OleDbCommand(query, _connOledb);
+                            commOledb.ExecuteNonQuery();
+                            //Insert into Access  simultaneously - End
+                        }
+                        else
+                        {
+                            query = "select Top 1 label_value_index from label_values where label_value= '" + val + "'";
+                            comm = new SqlCommand(query, _conn);
+                            iLastValueIndex = (Int32)comm.ExecuteScalar();
+                        }
+
+
+                        // This procedure will update the value for new property on the linkages associated with the tag.  
+                        comm = new SqlCommand("UPDATE_LabelValues", _conn);
+                        comm.CommandType = CommandType.StoredProcedure;
+                        comm.Parameters.Add(new SqlParameter("Tag", Tagvalue));
+                        comm.Parameters.Add(new SqlParameter("labelNameIndex", keyVal.Key));
+                        comm.Parameters.Add(new SqlParameter("labelValueIndex", iLastValueIndex));
+                        comm.CommandTimeout = 10000;
                         comm.ExecuteNonQuery();
 
-                        //Insert into Access simultaneously - Start
-                        commOledb = new OleDbCommand(query, _connOledb);
-                        commOledb.ExecuteNonQuery();
-                        //Insert into Access  simultaneously - End
                     }
-                    else
-                    {
-                        query = "select Top 1 label_value_index from label_values where label_value= '" + val + "'";
-                        comm = new SqlCommand(query, _conn);
-                        iLastValueIndex = (Int32)comm.ExecuteScalar();
-                    }
-
-                    // This procedure will update the value for new property on the linkages associated with the tag.  
-                    comm = new SqlCommand("UPDATE_LabelValues", _conn);
-                    comm.CommandType = CommandType.StoredProcedure;
-                    comm.Parameters.Add(new SqlParameter("Tag", Tagvalue));
-                    comm.Parameters.Add(new SqlParameter("labelNameIndex", keyVal.Key));
-                    comm.Parameters.Add(new SqlParameter("labelValueIndex", iLastValueIndex));
-                    comm.CommandTimeout = 10000;
-                    comm.ExecuteNonQuery();
                 }
             }
             catch (Exception ex)
@@ -1580,12 +1601,16 @@ namespace Bechtel.iRING.SPR
                     datatable.Rows.Add(_row);
                 }
 
-                SqlCommand comm = new SqlCommand("UPDATE_LabelNames", _conn);
-                comm.CommandType = CommandType.StoredProcedure;
-                comm.Parameters.Add(new SqlParameter("SpoolIndex", Key_Index));
-                comm.Parameters.Add(new SqlParameter("tblLabelIndexes", datatable));
-                comm.CommandTimeout = 10000;
-                comm.ExecuteNonQuery();
+                //If there is no new property dont call this sp.
+                if (datatable.Rows.Count > 0)
+                {
+                    SqlCommand comm = new SqlCommand("UPDATE_LabelNames", _conn);
+                    comm.CommandType = CommandType.StoredProcedure;
+                    comm.Parameters.Add(new SqlParameter("SpoolIndex", Key_Index));
+                    comm.Parameters.Add(new SqlParameter("tblLabelIndexes", datatable));
+                    comm.CommandTimeout = 10000;
+                    comm.ExecuteNonQuery();
+                }
             }
             catch (Exception ex)
             {

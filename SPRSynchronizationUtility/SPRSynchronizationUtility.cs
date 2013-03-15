@@ -25,7 +25,7 @@ namespace Bechtel.iRING.SPRUtility
             _settings["ApplicationName"] = "SQL";
 
             _baseDirectory = Directory.GetCurrentDirectory();
-            _baseDirectory = _baseDirectory.Substring(0, _baseDirectory.LastIndexOf("\\bin"));
+            _baseDirectory = _baseDirectory.Substring(0, _baseDirectory.LastIndexOf("\\bin")); // that's bad.
             _settings["BaseDirectoryPath"] = _baseDirectory;
             Directory.SetCurrentDirectory(_baseDirectory);
 
@@ -54,7 +54,7 @@ namespace Bechtel.iRING.SPRUtility
         public void MDBSynchronization()
         {
             Response response = _dataLayer.RefreshAll();
-            IList<IDataObject> dataObjects = _dataLayer.Get("Spools", new DataFilter(), 25, 0);
+            IList<IDataObject> dataObjects = _dataLayer.Get("Spools", new DataFilter(), 0, 0);
             response = _dataLayer.Post(dataObjects);
             _dataLayer.ReverseRefresh();
         }
