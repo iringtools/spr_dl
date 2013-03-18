@@ -39,7 +39,7 @@ namespace Bechtel.iRING.SPR
         private int Key_Index = 0;
         private Dictionary<int, DataProperty> _newProperties = new Dictionary<int, DataProperty>();
         private bool _IsLabelPropertyAdded = false;
-        private string _labelname = string.Empty;
+        private string _objectType = string.Empty;
 
         public SPRDataLayer(AdapterSettings settings)
             : base(settings)
@@ -59,7 +59,7 @@ namespace Bechtel.iRING.SPR
             _dbConnectionString = EncryptionUtility.Decrypt(_sprSettings["dbconnection"].ToString());
             _providerName = _sprSettings["mdbprovider"].ToString();
             _mdbConnectionString = String.Format("Provider={0};Data Source={1}", _providerName, _mdbFileName);
-            _labelname = _sprSettings["labelname"].ToString();
+            _objectType = _sprSettings["objecttype"].ToString();
         }
 
         public override DatabaseDictionary GetDatabaseDictionary()
@@ -506,13 +506,16 @@ namespace Bechtel.iRING.SPR
                 ConnectToSqL();
                 ConnectToAccess();
 
-                var list1 = (from dProperties in _dataDictionary.dataObjects[0].keyProperties
-                             select dProperties).ToList();
+                var lstObjects = (from dobjects in _dataDictionary.dataObjects
+                                  where dobjects.objectName == _objectType
+                                  select dobjects).ToList();
 
-                var list = (from dProperties in _dataDictionary.dataObjects[0].dataProperties
-                            where dProperties.propertyName == list1[0].keyPropertyName
+                var lstKeys = (from kProperties in lstObjects.First().keyProperties
+                             select kProperties).ToList();
+
+                var list = (from dProperties in lstObjects.First().dataProperties
+                            where dProperties.propertyName == lstKeys.First().keyPropertyName
                             select dProperties).ToList();
-
 
                 string tag = list[0].columnName;
                 string Tagvalue = row[tag].ToString();
@@ -1235,6 +1238,7 @@ namespace Bechtel.iRING.SPR
                 string server = string.Empty; string db = string.Empty;
                 string user = string.Empty; string pwd = string.Empty;
                 string sqlConnection = _dbConnectionString;
+
                 string[] connbit = sqlConnection.Split(';');
                 foreach (string bit in connbit)
                 {
@@ -1258,7 +1262,6 @@ namespace Bechtel.iRING.SPR
 
                 string connSqlImport = "ODBC;Description=SqlToMdb;DRIVER=SQL Server;SERVER={0};Database={1};User Id={2};Password={3}";
                 connSqlImport = string.Format(connSqlImport, server, db, user, pwd);
-
               //q = "Insert INTO labels (linkage_index,label_name_index,label_value_index,label_line_number,extended_label) select linkage_index,label_name_index,label_value_index,label_line_number,extended_label FROM [ODBC;Description=Test;DRIVER=SQL Server;SERVER=Ashs91077\\iring;Database=SPR;User Id=SPR;Password=SPR].labels";
                 q = "Insert INTO labels (linkage_index,label_name_index,label_value_index,label_line_number,extended_label) select linkage_index,label_name_index,label_value_index,label_line_number,extended_label FROM ["+connSqlImport+"].labels";
                 commandee = new OleDbCommand();
@@ -1271,7 +1274,8 @@ namespace Bechtel.iRING.SPR
             }
             catch (Exception ex)
             {
-                logger.Info("Error occured while updating the Access tables and the data :   " + ex.Message);
+                Console.WriteLine("Error occured while copying the labels table from SQL to MDB :\n\n" + ex.Message + ex.StackTrace);
+                logger.Info("Error occured while copying the tables from SQL to MDB :\n\n" + ex.Message);
                 throw ex;
             }
             finally
@@ -1476,6 +1480,13 @@ namespace Bechtel.iRING.SPR
         {
             try
             {
+                string _labelname = string.Empty;
+                var lstObjects = (from dobjects in _dataDictionary.dataObjects
+                                  where dobjects.objectName == _objectType
+                                  select dobjects).ToList();
+
+                _labelname = lstObjects[0].keyProperties.FirstOrDefault().keyPropertyName;
+
                 ConnectToSqL();
                 string InitialQuery = "select label_name_index from label_names	where label_name = '" + _labelname +"'";
 

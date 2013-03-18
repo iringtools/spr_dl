@@ -15,6 +15,7 @@ namespace Bechtel.iRING.SPRUtility
         private NameValueCollection _settings;
         private AdapterSettings _adapterSettings;
         private SPRDataLayer _dataLayer;
+        string _objectType = string.Empty;
 
         public SPRSynchronizationUtility()
         {
@@ -26,23 +27,25 @@ namespace Bechtel.iRING.SPRUtility
 
             _baseDirectory = Directory.GetCurrentDirectory();
             _baseDirectory = _baseDirectory.Substring(0, _baseDirectory.LastIndexOf("\\bin")); // that's bad.
+
             _settings["BaseDirectoryPath"] = _baseDirectory;
             Directory.SetCurrentDirectory(_baseDirectory);
 
             _adapterSettings = new AdapterSettings();
             _adapterSettings.AppendSettings(_settings);
-
             string appSettingsPath = String.Format("{0}{1}.{2}.config",
                 _adapterSettings["XmlPath"],
                 _settings["ProjectName"],
                 _settings["ApplicationName"]
             );
 
+           
             if (File.Exists(appSettingsPath))
             {
                 AppSettingsReader appSettings = new AppSettingsReader(appSettingsPath);
                 _adapterSettings.AppendSettings(appSettings);
             }
+            _objectType = _adapterSettings["objecttype"].ToString();
 
             _dataLayer = new SPRDataLayer(_adapterSettings);
             _dataLayer.GetDictionary();
@@ -53,10 +56,17 @@ namespace Bechtel.iRING.SPRUtility
        /// </summary>
         public void MDBSynchronization()
         {
-            Response response = _dataLayer.RefreshAll();
-            IList<IDataObject> dataObjects = _dataLayer.Get("Spools", new DataFilter(), 0, 0);
-            response = _dataLayer.Post(dataObjects);
-            _dataLayer.ReverseRefresh();
+            try
+            {
+                Response response = _dataLayer.RefreshAll();
+                IList<IDataObject> dataObjects = _dataLayer.Get(_objectType, new DataFilter(), 0, 0);
+                response = _dataLayer.Post(dataObjects);
+                _dataLayer.ReverseRefresh();
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.Message + ex.StackTrace);
+            }
         }
 
        /// <summary>
