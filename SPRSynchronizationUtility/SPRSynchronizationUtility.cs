@@ -16,9 +16,11 @@ namespace Bechtel.iRING.SPRUtility
         private AdapterSettings _adapterSettings;
         private SPRDataLayer _dataLayer;
         string _objectType = string.Empty;
+        StreamWriter _logFile = null;
 
-        public SPRSynchronizationUtility()
+        public SPRSynchronizationUtility(StreamWriter logFile)
         {
+            _logFile = logFile;
             _settings = new NameValueCollection();
 
             _settings["ProjectName"] = "12345_000";
@@ -26,7 +28,7 @@ namespace Bechtel.iRING.SPRUtility
             _settings["ApplicationName"] = "SQL";
 
             _baseDirectory = Directory.GetCurrentDirectory();
-            _baseDirectory = _baseDirectory.Substring(0, _baseDirectory.LastIndexOf("\\bin")); // that's bad.
+            _baseDirectory = _baseDirectory.Substring(0, _baseDirectory.LastIndexOf("\\bin")); 
 
             _settings["BaseDirectoryPath"] = _baseDirectory;
             Directory.SetCurrentDirectory(_baseDirectory);
@@ -49,6 +51,7 @@ namespace Bechtel.iRING.SPRUtility
 
             _dataLayer = new SPRDataLayer(_adapterSettings);
             _dataLayer.GetDictionary();
+            _dataLayer.EnableLogging(_logFile);
         }
 
        /// <summary>
@@ -58,10 +61,12 @@ namespace Bechtel.iRING.SPRUtility
         {
             try
             {
+                _logFile.WriteLine("Copy the database from Mdb in to SQL.");
                 Response response = _dataLayer.RefreshAll();
                 IList<IDataObject> dataObjects = _dataLayer.Get(_objectType, new DataFilter(), 0, 0);
                 response = _dataLayer.Post(dataObjects);
                 _dataLayer.ReverseRefresh();
+                _logFile.WriteLine("Copy the database from SQL in to Mdb.");
             }
             catch(Exception ex)
             {

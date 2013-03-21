@@ -38,8 +38,10 @@ namespace Bechtel.iRING.SPR
         private static readonly ILog logger = LogManager.GetLogger(typeof(SPRDataLayer));
         private int Key_Index = 0;
         private Dictionary<int, DataProperty> _newProperties = new Dictionary<int, DataProperty>();
+        private Dictionary<int, DataProperty> _updateProperties = new Dictionary<int, DataProperty>();
         private bool _IsLabelPropertyAdded = false;
         private string _objectType = string.Empty;
+        private StreamWriter _logFile = null;
 
         public SPRDataLayer(AdapterSettings settings)
             : base(settings)
@@ -437,7 +439,7 @@ namespace Bechtel.iRING.SPR
                 {
                    UpdateOnEveryPost(row);
                 }
-                
+                _logFile.WriteLine("Values are updated on all linkages");
                 status = "success";
                 #region OLDPostLogicdirectlyOnTable
                 /*
@@ -518,74 +520,90 @@ namespace Bechtel.iRING.SPR
                             select dProperties).ToList();
 
                 string tag = list[0].columnName;
-                string Tagvalue = row[tag].ToString();
+                string tagvalue = row[tag].ToString();
 
-                OleDbCommand commOledb = null;
-                foreach (KeyValuePair<int, DataProperty> keyVal in _newProperties)
+                if (_newProperties.Count > 0)
                 {
-                    // Inserting in Label Value...
-
-                    string val = Convert.ToString(row[keyVal.Value.columnName]);
-                    if (val == null)  // We cannot insert null so converting into blank.
-                    {
-                        val = string.Empty;
-                    }
-
-                    if (!string.IsNullOrEmpty(val))  // If the value is not blank, only then we are updating the value else there is no need.because blank is already applied to new properties by default.
-                    {
-                        string query = "SELECT ISNULL(MAX(label_value_index),0)+1 FROM label_values";
-                        SqlCommand comm = new SqlCommand(query, _conn);
-                        int iLastValueIndex = (Int32)comm.ExecuteScalar();
-
-
-                        query = "select count(*) from label_values where label_value= '" + val + "'";
-                        comm = new SqlCommand(query, _conn);
-                        int count = (Int32)comm.ExecuteScalar();
-
-                        //If value for new properties not found in label_values , insert it.
-                        if (count == 0)
-                        {
-                            double lblValNumeric = ConvertToDouble(val);  // Numeric conversion .
-                            query = "insert into label_values (label_value_index,label_value, label_value_numeric) values ( " +
-                                     iLastValueIndex + ",'" + val + "','" + lblValNumeric + "' )";
-
-                            comm = new SqlCommand(query, _conn);
-                            comm.ExecuteNonQuery();
-
-                            //Insert into Access simultaneously - Start
-                            commOledb = new OleDbCommand(query, _connOledb);
-                            commOledb.ExecuteNonQuery();
-                            //Insert into Access  simultaneously - End
-                        }
-                        else
-                        {
-                            query = "select Top 1 label_value_index from label_values where label_value= '" + val + "'";
-                            comm = new SqlCommand(query, _conn);
-                            iLastValueIndex = (Int32)comm.ExecuteScalar();
-                        }
-
-
-                        // This procedure will update the value for new property on the linkages associated with the tag.  
-                        comm = new SqlCommand("UPDATE_LabelValues", _conn);
-                        comm.CommandType = CommandType.StoredProcedure;
-                        comm.Parameters.Add(new SqlParameter("Tag", Tagvalue));
-                        comm.Parameters.Add(new SqlParameter("labelNameIndex", keyVal.Key));
-                        comm.Parameters.Add(new SqlParameter("labelValueIndex", iLastValueIndex));
-                        comm.CommandTimeout = 10000;
-                        comm.ExecuteNonQuery();
-
-                    }
+                    UpdateLabelValues(row, tagvalue, _newProperties);
+                }
+                else if (_updateProperties.Count > 0)
+                {
+                    UpdateLabelValues(row, tagvalue, _updateProperties);
                 }
             }
             catch (Exception ex)
             {
-                logger.Info("Error Occured while updating the Label and its associated Label tables" + ex.Message);
+                _logFile.WriteLine("Error Occured while updating the LabelValues in Label tables:" + ex.Message);
+                Console.WriteLine("Error Occured while updating the LabelValues in Label tables:" + ex.Message);
                 throw ex;
             }
             finally
             {
                 disconnectSqL();
                 disconnectAccess();
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private void UpdateLabelValues(DataRow row, string Tagvalue, Dictionary<int, DataProperty> lstproperties)
+        {
+            OleDbCommand commOledb = null;
+            foreach (KeyValuePair<int, DataProperty> keyVal in lstproperties)
+            {
+                // Inserting in Label Value...
+
+                string val = Convert.ToString(row[keyVal.Value.columnName]);
+                if (val == null)  // We cannot insert null so converting into blank.
+                {
+                    val = string.Empty;
+                }
+
+                if (!string.IsNullOrEmpty(val))  // If the value is not blank, only then we are updating the value else there is no need.because blank is already applied to new properties by default.
+                {
+                    string query = "SELECT ISNULL(MAX(label_value_index),0)+1 FROM label_values";
+                    SqlCommand comm = new SqlCommand(query, _conn);
+                    int iLastValueIndex = (Int32)comm.ExecuteScalar();
+
+
+                    query = "select count(*) from label_values where label_value= '" + val + "'";
+                    comm = new SqlCommand(query, _conn);
+                    int count = (Int32)comm.ExecuteScalar();
+
+                    //If value for new properties not found in label_values , insert it.
+                    if (count == 0)
+                    {
+                        double lblValNumeric = ConvertToDouble(val);  // Numeric conversion .
+                        query = "insert into label_values (label_value_index,label_value, label_value_numeric) values ( " +
+                                 iLastValueIndex + ",'" + val + "','" + lblValNumeric + "' )";
+
+                        comm = new SqlCommand(query, _conn);
+                        comm.ExecuteNonQuery();
+
+                        //Insert into Access simultaneously - Start
+                        commOledb = new OleDbCommand(query, _connOledb);
+                        commOledb.ExecuteNonQuery();
+                        //Insert into Access  simultaneously - End
+                    }
+                    else
+                    {
+                        query = "select Top 1 label_value_index from label_values where label_value= '" + val + "'";
+                        comm = new SqlCommand(query, _conn);
+                        iLastValueIndex = (Int32)comm.ExecuteScalar();
+                    }
+
+
+                    // This procedure will update the value for new property on the linkages associated with the tag.  
+                    comm = new SqlCommand("UPDATE_LabelValues", _conn);
+                    comm.CommandType = CommandType.StoredProcedure;
+                    comm.Parameters.Add(new SqlParameter("Tag", Tagvalue));
+                    comm.Parameters.Add(new SqlParameter("labelNameIndex", keyVal.Key));
+                    comm.Parameters.Add(new SqlParameter("labelValueIndex", iLastValueIndex));
+                    comm.CommandTimeout = 10000;
+                    comm.ExecuteNonQuery();
+
+                }
             }
         }
 
@@ -968,142 +986,145 @@ namespace Bechtel.iRING.SPR
                 foreach (DataRow tablerow in dataTable.Rows)
                 {
                     string strSheetTableName = tablerow["TABLE_NAME"].ToString();
-
-                    //Get Primary keys of the table - Start
-                    DataTable colKey = _connOledb.GetOleDbSchemaTable(OleDbSchemaGuid.Primary_Keys, new Object[] { null, null, strSheetTableName });
-                    DataView keyview = colKey.DefaultView;
-                    keyview.Sort = "ORDINAL";
-                    colKey = keyview.ToTable();
-                    List<string> tableKeys = new List<string>();
-                    foreach (DataRow row in colKey.Rows)
+                    //We are intrested in only these three tables.
+                    if (strSheetTableName == "label_names" || strSheetTableName == "label_values" || strSheetTableName == "labels")
                     {
-                        tableKeys.Add(row["COLUMN_NAME"].ToString());
-                    }
-                    //Get Primary keys of the table - End
-
-                    // Get All columns of the table.
-                    DataTable cols = _connOledb.GetOleDbSchemaTable(OleDbSchemaGuid.Columns, new object[] { null, null, strSheetTableName, null });
-                    DataView view = cols.DefaultView;
-                    view.Sort = "ORDINAL_POSITION";
-                    cols = view.ToTable();
-
-                    StringBuilder sb = new StringBuilder();
-
-                    foreach (DataRow colRow in cols.Rows)
-                    {
-                        string vsSQL = string.Empty;
-                        string strColumn = colRow["COLUMN_NAME"].ToString();
-
-                        string isNullable = string.Empty;
-                        if (Convert.ToBoolean(colRow["IS_NULLABLE"]) && !tableKeys.Contains(strColumn))
-                            isNullable = "NULL";
-                        else
-                            isNullable = "NOT NULL";
-
-
-                        string dataType = string.Empty;
-                        if (colRow["DATA_TYPE"].ToString() == "2" || colRow["DATA_TYPE"].ToString() == "3"
-                             || colRow["DATA_TYPE"].ToString() == "4")
+                        //Get Primary keys of the table - Start
+                        DataTable colKey = _connOledb.GetOleDbSchemaTable(OleDbSchemaGuid.Primary_Keys, new Object[] { null, null, strSheetTableName });
+                        DataView keyview = colKey.DefaultView;
+                        keyview.Sort = "ORDINAL";
+                        colKey = keyview.ToTable();
+                        List<string> tableKeys = new List<string>();
+                        foreach (DataRow row in colKey.Rows)
                         {
-                            dataType = "INT";
-                            vsSQL = "[" + strColumn + "] [" + dataType + "] " + isNullable + ",";
+                            tableKeys.Add(row["COLUMN_NAME"].ToString());
                         }
-                        //else if (colRow["DATA_TYPE"].ToString() == "5")
-                        //{
-                        //    dataType = "FLOAT";
-                        //    vsSQL = "[" + strColumn + "] [" + dataType + "] " + isNullable + ",";
-                        //}
-                        else if (colRow["DATA_TYPE"].ToString() == "11")
-                        {
-                            //dataType = "BIT"; True/false in 0 & 1
-                            dataType = "INT";
-                            vsSQL = "[" + strColumn + "] [" + dataType + "] " + isNullable + ",";
-                        }
-                        else if (colRow["DATA_TYPE"].ToString() == "128")
-                        {
-                            dataType = "image";
-                            vsSQL = "[" + strColumn + "] [" + dataType + "] " + isNullable + ",";
-                        }
-                        else if (colRow["DATA_TYPE"].ToString() == "7")
-                        {
-                            dataType = "DATE";
-                            vsSQL = "[" + strColumn + "] [" + dataType + "] " + isNullable + ",";
-                        }
-                        else
-                        {
-                            int length = 0;
-                            if (!string.IsNullOrEmpty(colRow["CHARACTER_MAXIMUM_LENGTH"].ToString()))
-                                length = Convert.ToInt32(colRow["CHARACTER_MAXIMUM_LENGTH"]);
+                        //Get Primary keys of the table - End
 
-                            if (length == 0)
-                                vsSQL = "[" + strColumn + "] [varchar] (MAX) " + isNullable + ",";
+                        // Get All columns of the table.
+                        DataTable cols = _connOledb.GetOleDbSchemaTable(OleDbSchemaGuid.Columns, new object[] { null, null, strSheetTableName, null });
+                        DataView view = cols.DefaultView;
+                        view.Sort = "ORDINAL_POSITION";
+                        cols = view.ToTable();
+
+                        StringBuilder sb = new StringBuilder();
+
+                        foreach (DataRow colRow in cols.Rows)
+                        {
+                            string vsSQL = string.Empty;
+                            string strColumn = colRow["COLUMN_NAME"].ToString();
+
+                            string isNullable = string.Empty;
+                            if (Convert.ToBoolean(colRow["IS_NULLABLE"]) && !tableKeys.Contains(strColumn))
+                                isNullable = "NULL";
                             else
-                                vsSQL = "[" + strColumn + "] [varchar] (" + length + ") " + isNullable + ",";
+                                isNullable = "NOT NULL";
+
+
+                            string dataType = string.Empty;
+                            if (colRow["DATA_TYPE"].ToString() == "2" || colRow["DATA_TYPE"].ToString() == "3"
+                                 || colRow["DATA_TYPE"].ToString() == "4")
+                            {
+                                dataType = "INT";
+                                vsSQL = "[" + strColumn + "] [" + dataType + "] " + isNullable + ",";
+                            }
+                            //else if (colRow["DATA_TYPE"].ToString() == "5")
+                            //{
+                            //    dataType = "FLOAT";
+                            //    vsSQL = "[" + strColumn + "] [" + dataType + "] " + isNullable + ",";
+                            //}
+                            else if (colRow["DATA_TYPE"].ToString() == "11")
+                            {
+                                //dataType = "BIT"; True/false in 0 & 1
+                                dataType = "INT";
+                                vsSQL = "[" + strColumn + "] [" + dataType + "] " + isNullable + ",";
+                            }
+                            else if (colRow["DATA_TYPE"].ToString() == "128")
+                            {
+                                dataType = "image";
+                                vsSQL = "[" + strColumn + "] [" + dataType + "] " + isNullable + ",";
+                            }
+                            else if (colRow["DATA_TYPE"].ToString() == "7")
+                            {
+                                dataType = "DATE";
+                                vsSQL = "[" + strColumn + "] [" + dataType + "] " + isNullable + ",";
+                            }
+                            else
+                            {
+                                int length = 0;
+                                if (!string.IsNullOrEmpty(colRow["CHARACTER_MAXIMUM_LENGTH"].ToString()))
+                                    length = Convert.ToInt32(colRow["CHARACTER_MAXIMUM_LENGTH"]);
+
+                                if (length == 0)
+                                    vsSQL = "[" + strColumn + "] [varchar] (MAX) " + isNullable + ",";
+                                else
+                                    vsSQL = "[" + strColumn + "] [varchar] (" + length + ") " + isNullable + ",";
+                            }
+
+                            sb.Append(vsSQL);
                         }
 
-                        sb.Append(vsSQL);
-                    }
+                        // Generate Primary keys string
+                        string vInheritColumns = string.Empty;
+                        string sKeys = string.Empty;
+                        foreach (string key in tableKeys)
+                        {
+                            sKeys += key + ",";
+                        }
 
-                    // Generate Primary keys string
-                    string vInheritColumns = string.Empty;
-                    string sKeys = string.Empty;
-                    foreach (string key in tableKeys)
-                    {
-                        sKeys += key + ",";
-                    }
+                        if (!string.IsNullOrEmpty(sKeys))
+                        {
+                            sKeys = sKeys.Substring(0, sKeys.LastIndexOf(','));
+                            sKeys = "PRIMARY KEY (" + sKeys + " )";
+                            sb.Append(sKeys);
+                            vInheritColumns = sb.ToString();
+                        }
+                        else
+                        {
+                            vInheritColumns = sb.ToString(0, sb.Length - 1);
+                        }
 
-                    if (!string.IsNullOrEmpty(sKeys))
-                    {
-                        sKeys = sKeys.Substring(0, sKeys.LastIndexOf(','));
-                        sKeys = "PRIMARY KEY (" + sKeys + " )";
-                        sb.Append(sKeys);
-                        vInheritColumns = sb.ToString();
-                    }
-                    else
-                    {
-                        vInheritColumns = sb.ToString(0, sb.Length - 1);
-                    }
+                        ConnectToSqL();
+                        SqlCommand sqlcomm = new SqlCommand();
+                        sqlcomm.Connection = _conn;
 
-                    ConnectToSqL();
-                    SqlCommand sqlcomm = new SqlCommand();
-                    sqlcomm.Connection = _conn;
-
-                    // First, dropping the table if it exists. 
-                    sqlcomm.CommandText = string.Format(SqlConstant.DROP_DB, strSheetTableName);
-                    sqlcomm.ExecuteNonQuery();
-
-                    // Second, Creating the table in the cache.
-                    sqlcomm.CommandText = "CREATE TABLE [dbo].[" + strSheetTableName + "] (" + vInheritColumns + ")";
-                    sqlcomm.ExecuteNonQuery();
-
-                    if (strSheetTableName == "labels")
-                    {
-                        sqlcomm.CommandText = SqlConstant.IndexOn_tblLabels;
+                        // First, dropping the table if it exists. 
+                        sqlcomm.CommandText = string.Format(SqlConstant.DROP_DB, strSheetTableName);
                         sqlcomm.ExecuteNonQuery();
-                    }
 
-                    OleDbCommand command = new OleDbCommand();
-                    command.Connection = _connOledb;
-                    DataTable tableColumns = _connOledb.GetOleDbSchemaTable(OleDbSchemaGuid.Columns, new object[] { null, null, strSheetTableName, null });
-                    command.CommandText = "Select * from " + strSheetTableName;
-                    OleDbDataReader tAccess = command.ExecuteReader();
+                        // Second, Creating the table in the cache.
+                        sqlcomm.CommandText = "CREATE TABLE [dbo].[" + strSheetTableName + "] (" + vInheritColumns + ")";
+                        sqlcomm.ExecuteNonQuery();
 
-                    // Bulk copy from Access to SQL ...  
-                    using (SqlBulkCopy bulkCopy = new SqlBulkCopy(_conn))
-                    {
-                        bulkCopy.BulkCopyTimeout = 600;
-                        bulkCopy.DestinationTableName = "dbo." + strSheetTableName;
-                        try
+                        if (strSheetTableName == "labels")
                         {
-                            bulkCopy.WriteToServer(tAccess);
+                            sqlcomm.CommandText = SqlConstant.IndexOn_tblLabels;
+                            sqlcomm.ExecuteNonQuery();
                         }
-                        catch (Exception ex)
+
+                        OleDbCommand command = new OleDbCommand();
+                        command.Connection = _connOledb;
+                        DataTable tableColumns = _connOledb.GetOleDbSchemaTable(OleDbSchemaGuid.Columns, new object[] { null, null, strSheetTableName, null });
+                        command.CommandText = "Select * from " + strSheetTableName;
+                        OleDbDataReader tAccess = command.ExecuteReader();
+
+                        // Bulk copy from Access to SQL ...  
+                        using (SqlBulkCopy bulkCopy = new SqlBulkCopy(_conn))
                         {
-                            status = "fail";
-                            Console.WriteLine(ex.Message);
+                            bulkCopy.BulkCopyTimeout = 600;
+                            bulkCopy.DestinationTableName = "dbo." + strSheetTableName;
+                            try
+                            {
+                                bulkCopy.WriteToServer(tAccess);
+                            }
+                            catch (Exception ex)
+                            {
+                                status = "fail";
+                                Console.WriteLine(ex.Message);
+                            }
                         }
+                        status = "success";
                     }
-                    status = "success";
                 }
             }
             catch (Exception ex)
@@ -1510,7 +1531,7 @@ namespace Bechtel.iRING.SPR
                     comm = new SqlCommand(InitialQuery, _conn);
                     int iLastlabel_nameCount = (Int32)comm.ExecuteScalar();
 
-                    var list = from dProperties in _dataDictionary.dataObjects[0].dataProperties
+                    var list = from dProperties in lstObjects[0].dataProperties
                                select dProperties;
 
                     _newProperties = new Dictionary<int, DataProperty>();
@@ -1531,13 +1552,25 @@ namespace Bechtel.iRING.SPR
 
 
                             // Insert into mbd simultaneously  - START
-                            ConnectToAccess();                           
+                            ConnectToAccess();
                             OleDbCommand cmmdOledb = new OleDbCommand(InitialQuery, _connOledb);
                             cmmdOledb.ExecuteNonQuery();
                             // Insert into mbd simultaneously  - END
 
                             _newProperties.Add(iLastlabel_nameCount, property);
                             iLastlabel_nameCount++;
+                            _logFile.WriteLine("New Property added in labelsName table: " + property.propertyName);
+                        }
+                        else // If property Found, get the indexes because we have to update it.
+                        {
+                            if (_labelname != property.propertyName)
+                            {
+                                InitialQuery = "select label_name_index from label_names where label_name = '" + property.propertyName + "'";
+                                comm = new SqlCommand(InitialQuery, _conn);
+                                int label_name_index = (Int32)comm.ExecuteScalar();
+
+                                _updateProperties.Add(label_name_index, property);
+                            }
                         }
 
                     }
@@ -1551,6 +1584,7 @@ namespace Bechtel.iRING.SPR
             }
             catch (Exception ex)
             {
+                _logFile.WriteLine(ex.Message);
                 logger.Info(ex.Message);
                 throw ex;
             }
@@ -1612,7 +1646,7 @@ namespace Bechtel.iRING.SPR
                     datatable.Rows.Add(_row);
                 }
 
-                //If there is no new property dont call this sp.
+                //If there are new properties add it to all linkages of that object.
                 if (datatable.Rows.Count > 0)
                 {
                     SqlCommand comm = new SqlCommand("UPDATE_LabelNames", _conn);
@@ -1621,12 +1655,41 @@ namespace Bechtel.iRING.SPR
                     comm.Parameters.Add(new SqlParameter("tblLabelIndexes", datatable));
                     comm.CommandTimeout = 10000;
                     comm.ExecuteNonQuery();
+                    _logFile.WriteLine("New properties are added on all linkages with null values");
+                }
+                else if(_updateProperties.Count > 0) // Incase there are no new properties, still we want to update the value.
+                {                                    // So put null on all linkages of that object before update.
+                    string propIndexes = string.Empty;
+                    foreach (KeyValuePair<int, DataProperty> keyVal in _updateProperties)
+                    {
+                        propIndexes += keyVal.Key.ToString() + ",";
+                    }
+                    propIndexes = propIndexes.Substring(0, propIndexes.LastIndexOf(','));
+
+                    string Query = "select label_value_index from label_values where label_value = ''";
+                    SqlCommand comm = new SqlCommand(Query, _conn);
+                    int null_Index = (Int32)comm.ExecuteScalar();
+
+                     Query = "update labels set label_value_index = "+ null_Index + " where label_name_index in("+ propIndexes +")";
+                     comm = new SqlCommand(Query, _conn);
+                     int updatedRowCount = (Int32)comm.ExecuteNonQuery();
+                    
+                    if(updatedRowCount >0)
+                        _logFile.WriteLine("New properties are set to null values");
+                    else
+                        _logFile.WriteLine("No linakges found for the new properties ");
                 }
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex.Message + ex.StackTrace);
                 logger.Info(ex.Message);
             }
+        }
+
+        public void EnableLogging(StreamWriter logFile)
+        {
+            _logFile = logFile;
         }
     }
 }
