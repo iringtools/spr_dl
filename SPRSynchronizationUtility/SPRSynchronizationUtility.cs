@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using org.iringtools.adapter;
@@ -15,7 +15,6 @@ namespace Bechtel.iRING.SPRUtility
         private NameValueCollection _settings;
         private AdapterSettings _adapterSettings;
         private SPRDataLayer _dataLayer;
-        string _objectType = string.Empty;
         StreamWriter _logFile = null;
 
         public SPRSynchronizationUtility(StreamWriter logFile)
@@ -47,7 +46,6 @@ namespace Bechtel.iRING.SPRUtility
                 AppSettingsReader appSettings = new AppSettingsReader(appSettingsPath);
                 _adapterSettings.AppendSettings(appSettings);
             }
-            _objectType = _adapterSettings["objecttype"].ToString();
 
             _dataLayer = new SPRDataLayer(_adapterSettings);
             _dataLayer.GetDictionary();
@@ -57,20 +55,21 @@ namespace Bechtel.iRING.SPRUtility
        /// <summary>
        /// This would be called After Exchange and it will update the MDB.
        /// </summary>
-        public void MDBSynchronization()
+        public void MDBSynchronization(string objectType)
         {
             try
             {
                 _logFile.WriteLine("Copy the database from Mdb in to SQL.");
                 Response response = _dataLayer.RefreshAll();
-                IList<IDataObject> dataObjects = _dataLayer.Get(_objectType, new DataFilter(), 0, 0);
+                IList<IDataObject> dataObjects = _dataLayer.Get(objectType, new DataFilter(), 0, 0);
                 response = _dataLayer.Post(dataObjects);
                 _dataLayer.ReverseRefresh();
                 _logFile.WriteLine("Copy the database from SQL in to Mdb.");
             }
             catch(Exception ex)
             {
-                Console.WriteLine(ex.Message + ex.StackTrace);
+                _logFile.WriteLine(ex.Message + ex.StackTrace);
+                throw ex;
             }
         }
 
@@ -80,6 +79,20 @@ namespace Bechtel.iRING.SPRUtility
         public void PopulateSpool()
         {
             _dataLayer.PopulateSpoolTable();
+        }
+
+        //Getting the list of objects to be displayed in dropdown list.
+        public List<DataObject> GetObjects()
+        {
+            DatabaseDictionary _dictionary = _dataLayer.GetDatabaseDictionary();
+            List<DataObject> objects = _dictionary.dataObjects;
+            return objects;
+        }
+
+        // Passing the Mdb Name to the Data Layer.
+        public void UpdateMdbFile(string fileName)
+        {
+            _dataLayer.UpdateMdbFileName(fileName);
         }
     }
 }
