@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -33,13 +33,11 @@ namespace Bechtel.iRING.SPR
         private string _mdbConnectionString = string.Empty;
         private string _dbConnectionString = string.Empty;
         private string _mdbFileName = string.Empty;
-        private string _providerName;
         private StaticDust.Configuration.AppSettingsReader _sprSettings;
         private static readonly ILog logger = LogManager.GetLogger(typeof(SPRDataLayer));
         private int Key_Index = 0;
         private Dictionary<int, DataProperty> _newProperties = new Dictionary<int, DataProperty>();
         private Dictionary<int, DataProperty> _updateProperties = new Dictionary<int, DataProperty>();
-        private bool _IsLabelPropertyAdded = false;
         private string _objectType = string.Empty;
         private StreamWriter _logFile = null;
 
@@ -54,14 +52,9 @@ namespace Bechtel.iRING.SPR
             _appConfigXML = String.Format("{0}{1}.{2}.config", _xmlPath, _projectName, _applicationName);
             _sprSettings = new StaticDust.Configuration.AppSettingsReader(_appConfigXML);
 
-            _mdbFileName = String.Format("{0}{1}{2}", _baseDirectory, _xmlPath, _sprSettings["mdbfilename"].ToString());
-
             _appConfigXML = String.Format("{0}{1}.{2}.config", _xmlPath, _projectName, _applicationName);
             _sprSettings = new StaticDust.Configuration.AppSettingsReader(_appConfigXML);
             _dbConnectionString = EncryptionUtility.Decrypt(_sprSettings["dbconnection"].ToString());
-            _providerName = _sprSettings["mdbprovider"].ToString();
-            _mdbConnectionString = String.Format("Provider={0};Data Source={1}", _providerName, _mdbFileName);
-            _objectType = _sprSettings["objecttype"].ToString();
         }
 
         public override DatabaseDictionary GetDatabaseDictionary()
@@ -71,6 +64,11 @@ namespace Bechtel.iRING.SPR
             _conn = new SqlConnection(connStr);
             
             return _dictionary;
+        }
+
+        public void UpdateMdbFileName(string MbdFileName)
+        {
+            _mdbConnectionString = String.Format("Provider={0};Data Source={1}", SqlConstant.MDBProvider, MbdFileName);
         }
 
         public override DataDictionary GetDictionary()
@@ -422,22 +420,24 @@ namespace Bechtel.iRING.SPR
             string status = string.Empty;
             try
             {
+                string tableName = dataTables.First().TableName;
+                var lstObjects = (from dobjects in _dataDictionary.dataObjects
+                                  where dobjects.tableName == tableName
+                                  select dobjects).ToList();
+
+                _objectType = lstObjects.First().objectName;
                 // Updating SQL
                 ConnectToSqL();
 
-                //Spool Properties needs to be added once per Page.
-                if (!_IsLabelPropertyAdded)
-                {
-                    AddLabelProperties();    // Adding Properties.
-                    AddlabelsOnLinkages();   // Adding blank values for new properties on all linkages of the object(spool)
-                }
+                AddLabelProperties();    // Adding Properties.
+                AddlabelsOnLinkages();   // Adding blank values for new properties on all linkages of the object(spool)
 
                 //For each row in proxy table update Label,Label name and Label Values.
                 DataTable datatable = new DataTable();
                 datatable = dataTables[0];
                 foreach (DataRow row in datatable.Rows)
                 {
-                   UpdateOnEveryPost(row);
+                    UpdateOnEveryPost(row);
                 }
                 _logFile.WriteLine("Values are updated on all linkages");
                 status = "success";
@@ -482,9 +482,10 @@ namespace Bechtel.iRING.SPR
 
                 # endregion
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 logger.Info("Error occured while posting the data in cache tables:   " + ex.Message);
+                _logFile.WriteLine("Error occured while posting the data in cache tables:   " + ex.Message);
                 throw ex;
             }
             finally
@@ -534,7 +535,6 @@ namespace Bechtel.iRING.SPR
             catch (Exception ex)
             {
                 _logFile.WriteLine("Error Occured while updating the LabelValues in Label tables:" + ex.Message);
-                Console.WriteLine("Error Occured while updating the LabelValues in Label tables:" + ex.Message);
                 throw ex;
             }
             finally
@@ -975,7 +975,6 @@ namespace Bechtel.iRING.SPR
 
         private Response RefreshSqLDataBase()
         {
-            
             Response response = new Response();
             string status = string.Empty;
             try
@@ -1120,7 +1119,7 @@ namespace Bechtel.iRING.SPR
                             catch (Exception ex)
                             {
                                 status = "fail";
-                                Console.WriteLine(ex.Message);
+                                _logFile.WriteLine(ex.Message);
                             }
                         }
                         status = "success";
@@ -1130,6 +1129,7 @@ namespace Bechtel.iRING.SPR
             catch (Exception ex)
             {
                 logger.Info("Error occured while caching the tables and the data :   " + ex.Message);
+                _logFile.WriteLine("Error occured while caching the tables and the data in to SQL :   " + ex.Message);
                 throw ex;
             }
             finally
@@ -1295,7 +1295,7 @@ namespace Bechtel.iRING.SPR
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error occured while copying the labels table from SQL to MDB :\n\n" + ex.Message + ex.StackTrace);
+                _logFile.WriteLine("Error occured while copying the labels table from SQL to MDB :\n\n" + ex.Message + ex.StackTrace);
                 logger.Info("Error occured while copying the tables from SQL to MDB :\n\n" + ex.Message);
                 throw ex;
             }
@@ -1508,8 +1508,9 @@ namespace Bechtel.iRING.SPR
 
                 _labelname = lstObjects[0].keyProperties.FirstOrDefault().keyPropertyName;
 
+                _updateProperties.Clear();
                 ConnectToSqL();
-                string InitialQuery = "select label_name_index from label_names	where label_name = '" + _labelname +"'";
+                string InitialQuery = "select label_name_index from label_names    where label_name = '" + _labelname +"'";
 
                 SqlCommand comm = new SqlCommand(InitialQuery, _conn);
                 SqlDataReader reader = comm.ExecuteReader();
@@ -1572,9 +1573,7 @@ namespace Bechtel.iRING.SPR
                                 _updateProperties.Add(label_name_index, property);
                             }
                         }
-
                     }
-                    _IsLabelPropertyAdded = true; // One time Label(e.g. spool) Properties added.
                 }
                 else
                 {
@@ -1682,8 +1681,9 @@ namespace Bechtel.iRING.SPR
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message + ex.StackTrace);
+                _logFile.WriteLine(ex.Message + ex.StackTrace);
                 logger.Info(ex.Message);
+                throw ex;
             }
         }
 
