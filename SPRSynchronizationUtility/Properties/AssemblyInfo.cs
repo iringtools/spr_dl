@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("PostAfterExchange")]
+[assembly: AssemblyTitle("SyncUtility")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Bechtel Corporation")]
-[assembly: AssemblyProduct("PostAfterExchange")]
+[assembly: AssemblyProduct("SyncUtility")]
 [assembly: AssemblyCopyright("Copyright © Bechtel Corporation 2013")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("24f9c0e2-54b7-4844-af05-848d7e26a3a1")]
+[assembly: Guid("fc2305ff-f347-488b-aebe-d4dd70919725")]
 
 // Version information for an assembly consists of the following four values:
 //

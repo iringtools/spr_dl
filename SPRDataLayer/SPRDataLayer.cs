@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -1510,7 +1510,7 @@ namespace Bechtel.iRING.SPR
 
                 _updateProperties.Clear();
                 ConnectToSqL();
-                string InitialQuery = "select label_name_index from label_names    where label_name = '" + _labelname +"'";
+                string InitialQuery = "select label_name_index from label_names	where label_name = '" + _labelname +"'";
 
                 SqlCommand comm = new SqlCommand(InitialQuery, _conn);
                 SqlDataReader reader = comm.ExecuteReader();
