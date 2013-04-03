@@ -534,7 +534,7 @@ namespace Bechtel.iRING.SPR
             }
             catch (Exception ex)
             {
-                _logFile.WriteLine("Error Occured while updating the LabelValues in Label tables:" + ex.Message);
+                _logFile.WriteLine("Error Occured while updating the LabelValues in Label tables: " + ex.Message);
                 throw ex;
             }
             finally
@@ -633,7 +633,7 @@ namespace Bechtel.iRING.SPR
             }
             catch (Exception ex)
             {
-                logger.Info("Error occured in ConvertToDouble for label_value_numeric"+ex.Message);
+                logger.Info("Error occured in ConvertToDouble for label_value_numeric - "+ex.Message);
                 return 0;
             }
         }
@@ -1281,13 +1281,14 @@ namespace Bechtel.iRING.SPR
                     }
                 }
 
-                string connSqlImport = "ODBC;Description=SqlToMdb;DRIVER=SQL Server;SERVER={0};Database={1};User Id={2};Password={3}";
+                string connSqlImport = "ODBC;Description=SqlToMdb;DRIVER=SQL Server;SERVER={0};Database={1};Uid={2};Pwd={3}";
                 connSqlImport = string.Format(connSqlImport, server, db, user, pwd);
-              //q = "Insert INTO labels (linkage_index,label_name_index,label_value_index,label_line_number,extended_label) select linkage_index,label_name_index,label_value_index,label_line_number,extended_label FROM [ODBC;Description=Test;DRIVER=SQL Server;SERVER=Ashs91077\\iring;Database=SPR;User Id=SPR;Password=SPR].labels";
+               // q = "Insert INTO labels (linkage_index,label_name_index,label_value_index,label_line_number,extended_label) select linkage_index,label_name_index,label_value_index,label_line_number,extended_label FROM [ODBC;Description=Test;DRIVER=SQL Server;SERVER=Ashs91077\\iring;Database=SPR;Uid=SPR;Pwd=SPR].labels";
                 q = "Insert INTO labels (linkage_index,label_name_index,label_value_index,label_line_number,extended_label) select linkage_index,label_name_index,label_value_index,label_line_number,extended_label FROM ["+connSqlImport+"].labels";
                 commandee = new OleDbCommand();
                 commandee.Connection = _connOledb;
                 commandee.CommandText = q;
+
                 commandee.ExecuteNonQuery();
                 //---- Bulk Update Labels - Completed.
 
@@ -1295,8 +1296,13 @@ namespace Bechtel.iRING.SPR
             }
             catch (Exception ex)
             {
-                _logFile.WriteLine("Error occured while copying the labels table from SQL to MDB :\n\n" + ex.Message + ex.StackTrace);
-                logger.Info("Error occured while copying the tables from SQL to MDB :\n\n" + ex.Message);
+                _logFile.WriteLine("SQL Connection State : " + _conn.State);
+                _logFile.WriteLine("MDB Connection State : " + _connOledb.State);
+                _logFile.WriteLine("Error occured while copying the labels table from SQL to MDB :\n\n");
+                _logFile.WriteLine("Exception Messsage: " + ex.Message);
+                _logFile.WriteLine("StackTrace: " + ex.StackTrace);
+                _logFile.WriteLine("Inner exception: " + ex.InnerException);
+                _logFile.WriteLine("Exception Data: " + ex.Data);
                 throw ex;
             }
             finally
@@ -1676,12 +1682,13 @@ namespace Bechtel.iRING.SPR
                     if(updatedRowCount >0)
                         _logFile.WriteLine("New properties are set to null values");
                     else
-                        _logFile.WriteLine("No linakges found for the new properties ");
+                        _logFile.WriteLine("No linkages found for the new properties");
                 }
             }
             catch (Exception ex)
             {
-                _logFile.WriteLine(ex.Message + ex.StackTrace);
+                _logFile.WriteLine("Exception: " +ex.Message);
+                _logFile.WriteLine("StackTrace: " +ex.StackTrace);
                 logger.Info(ex.Message);
                 throw ex;
             }
