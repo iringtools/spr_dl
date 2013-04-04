@@ -1283,7 +1283,7 @@ namespace Bechtel.iRING.SPR
 
                 string connSqlImport = "ODBC;Description=SqlToMdb;DRIVER=SQL Server;SERVER={0};Database={1};Uid={2};Pwd={3}";
                 connSqlImport = string.Format(connSqlImport, server, db, user, pwd);
-               // q = "Insert INTO labels (linkage_index,label_name_index,label_value_index,label_line_number,extended_label) select linkage_index,label_name_index,label_value_index,label_line_number,extended_label FROM [ODBC;Description=Test;DRIVER=SQL Server;SERVER=Ashs91077\\iring;Database=SPR;Uid=SPR;Pwd=SPR].labels";
+                //q = "Insert INTO labels (linkage_index,label_name_index,label_value_index,label_line_number,extended_label) select linkage_index,label_name_index,label_value_index,label_line_number,extended_label FROM [ODBC;Description=Test;DRIVER=SQL Server;SERVER=Ashs91077\\iring;Database=SPR;User Id=SPR;Password=SPR].labels";
                 q = "Insert INTO labels (linkage_index,label_name_index,label_value_index,label_line_number,extended_label) select linkage_index,label_name_index,label_value_index,label_line_number,extended_label FROM ["+connSqlImport+"].labels";
                 commandee = new OleDbCommand();
                 commandee.Connection = _connOledb;

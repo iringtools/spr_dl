@@ -98,8 +98,11 @@ namespace Bechtel.iRING.SPRUtility
 
         private void btnBrowse_Click(object sender, EventArgs e)
         {
+            string InitialbasePath = Directory.GetCurrentDirectory();
+            string CurrentbasePath = string.Empty;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
+                CurrentbasePath = Directory.GetCurrentDirectory();
                 string fileToOpen = openFileDialog.FileName;
                 string fileExtension = fileToOpen.Substring(fileToOpen.LastIndexOf('.') + 1);
                 if (fileExtension.ToUpper() != "MDB2")
@@ -110,6 +113,9 @@ namespace Bechtel.iRING.SPRUtility
                 txtMdbName.Text = fileToOpen;
                 syncUtility.UpdateMdbFile(fileToOpen);
             }
+
+            if (InitialbasePath != CurrentbasePath)                 // In XP both path would be different.
+                Directory.SetCurrentDirectory(InitialbasePath);
         }
 
         private void SaveLoggingFile()
