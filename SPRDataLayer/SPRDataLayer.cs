@@ -1550,19 +1550,31 @@ namespace Bechtel.iRING.SPR
                         comm = new SqlCommand(InitialQuery, _conn);
                         int count = (Int32)comm.ExecuteScalar();
 
-                        // If Property not found, Plz insert it.
+                        // If Property not found, Plz insert it in label_names table.
                         if (count == 0)
                         {
-                            InitialQuery = "Insert into label_names (label_name_index,label_name) values ( " + iLastlabel_nameCount + ", '" + property.propertyName + "' )";
+                            InitialQuery = "SELECT COUNT(*) FROM information_schema.columns WHERE table_name = 'label_names' and COLUMN_NAME = 'label_status'";
+                            comm = new SqlCommand(InitialQuery, _conn);
+                            count = (Int32)comm.ExecuteScalar();
+
+                            //Columns in table - label_names varies so insert accordingly.
+                            if (count == 1)
+                            {
+                                InitialQuery = "Insert into label_names (label_name_index,label_name,label_status) values ( " + iLastlabel_nameCount + ", '" + property.propertyName + "', " + 1 + ")";
+                            }
+                            else
+                            {
+                                InitialQuery = "Insert into label_names (label_name_index,label_name) values ( " + iLastlabel_nameCount + ", '" + property.propertyName + "' )";
+                            }
                             comm = new SqlCommand(InitialQuery, _conn);
                             comm.ExecuteNonQuery();
-
 
                             // Insert into mbd simultaneously  - START
                             ConnectToAccess();
                             OleDbCommand cmmdOledb = new OleDbCommand(InitialQuery, _connOledb);
                             cmmdOledb.ExecuteNonQuery();
                             // Insert into mbd simultaneously  - END
+
 
                             _newProperties.Add(iLastlabel_nameCount, property);
                             iLastlabel_nameCount++;
