@@ -31,8 +31,8 @@ namespace Bechtel.iRING.SPRUtility
 
         private void btnCancel_Click(object sender, EventArgs e)
         {
-            this.Close();
             SaveLoggingFile();
+            this.Close();
         }
 
         private void btnGo_Click(object sender, EventArgs e)
@@ -68,6 +68,7 @@ namespace Bechtel.iRING.SPRUtility
                 if (dialogResult == DialogResult.No)
                 {
                     this.Close();
+                    SaveLoggingFile();
                 }
             }
             catch (Exception ex)
@@ -76,11 +77,12 @@ namespace Bechtel.iRING.SPRUtility
                 Application.DoEvents();
 
                 logFile.WriteLine(ex.Message + ex.StackTrace);
+                SaveLoggingFile();
                 MessageBox.Show("Exception occured please check logFile: " + ex.Message, "Exception", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
-                SaveLoggingFile();
+                
             }
         }
 
@@ -120,10 +122,13 @@ namespace Bechtel.iRING.SPRUtility
 
         private void SaveLoggingFile()
         {
-            logFile.WriteLine("Log file saved successfully!");
-            logFile.WriteLine("End Time:" + DateTime.Now);
-            logFile.WriteLine();
-            logFile.Close();
+            if (logFile.BaseStream != null)
+            {
+                logFile.WriteLine("Log file saved successfully!");
+                logFile.WriteLine("End Time:" + DateTime.Now);
+                logFile.WriteLine();
+                logFile.Close();
+            }
         }
     }
 }

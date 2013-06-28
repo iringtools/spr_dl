@@ -40,6 +40,7 @@ namespace Bechtel.iRING.SPR
         private Dictionary<int, DataProperty> _updateProperties = new Dictionary<int, DataProperty>();
         private string _objectType = string.Empty;
         private StreamWriter _logFile = null;
+        private DataSet dsFilter = null;
 
         public SPRDataLayer(AdapterSettings settings)
             : base(settings)
@@ -52,8 +53,8 @@ namespace Bechtel.iRING.SPR
             _appConfigXML = String.Format("{0}{1}.{2}.config", _xmlPath, _projectName, _applicationName);
             _sprSettings = new StaticDust.Configuration.AppSettingsReader(_appConfigXML);
 
-            _appConfigXML = String.Format("{0}{1}.{2}.config", _xmlPath, _projectName, _applicationName);
-            _sprSettings = new StaticDust.Configuration.AppSettingsReader(_appConfigXML);
+            //_appConfigXML = String.Format("{0}{1}.{2}.config", _xmlPath, _projectName, _applicationName);
+            //_sprSettings = new StaticDust.Configuration.AppSettingsReader(_appConfigXML);
             _dbConnectionString = EncryptionUtility.Decrypt(_sprSettings["dbconnection"].ToString());
         }
 
@@ -426,6 +427,11 @@ namespace Bechtel.iRING.SPR
                                   select dobjects).ToList();
 
                 _objectType = lstObjects.First().objectName;
+                // Loading the filter.xml file.
+                dsFilter = new DataSet("dataFilter");
+                string filterPath = String.Format("{0}{1}{2}.xml", _baseDirectory, _xmlPath, "Filter");
+                dsFilter.ReadXml(filterPath);
+
                 // Updating SQL
                 ConnectToSqL();
 
@@ -1514,6 +1520,15 @@ namespace Bechtel.iRING.SPR
 
                 _labelname = lstObjects[0].keyProperties.FirstOrDefault().keyPropertyName;
 
+                //Check if the object is specified in the filter, get the labelname appropriately.
+                DataRow row = (from DataRow dr in dsFilter.Tables[0].Rows
+                               where (string)dr["objectName"] == _objectType
+                               select dr).FirstOrDefault();
+                if (row != null)
+                {
+                    _labelname = Convert.ToString(row["propertyName"]);
+                }
+
                 _updateProperties.Clear();
                 ConnectToSqL();
                 string InitialQuery = "select label_name_index from label_names	where label_name = '" + _labelname +"'";
@@ -1663,18 +1678,73 @@ namespace Bechtel.iRING.SPR
                     datatable.Rows.Add(_row);
                 }
 
+                //---Implement filter here so that we can pass it to sp.
+
+                //DataSet dsDataFilter = new DataSet("dataFilter");
+                //string filterPath = String.Format("{0}{1}{2}.xml", _baseDirectory, _xmlPath, "Filter");
+                //dsDataFilter.ReadXml(filterPath);
+
+                DataRow row = (from DataRow dr in dsFilter.Tables[0].Rows
+                          where (string)dr["objectName"] == _objectType
+                          select dr).FirstOrDefault();
+
+                string parentCursorForSP = string.Empty;
+                StringBuilder sqlExpression = new StringBuilder();
+                if (row != null)
+                {
+                    string relationalOperator = row["relationalOperator"].ToString();
+                    string value = row["value"].ToString();
+                    if (relationalOperator.ToLower() == "startswith")
+                    {
+                        sqlExpression.Append(" LIKE '" + value.Replace("'", "''") + "%'");
+                    }
+                    else if (relationalOperator.ToLower() == "EndsWith")
+                    {
+                        sqlExpression.Append(" LIKE '%" + value.Replace("'", "''") + "'");
+                    }
+                    else if (relationalOperator.ToLower() == "Contains")
+                    {
+                        sqlExpression.Append(" LIKE '%" + value.Replace("'", "''") + "%'");
+                    }
+                    else if (relationalOperator.ToLower() == "EqualTo")
+                    {
+                        sqlExpression.Append("='" + value.Replace("'", "''") + "'");
+                    }
+                    else if (relationalOperator.ToLower() == "NotEqualTo")
+                    {
+                        sqlExpression.Append("<>'" + value.Replace("'", "''") + "'");
+                    }
+
+                    parentCursorForSP = "DECLARE Linkage_Index CURSOR FOR" +
+                                        " (select linkage_index,(select ISNULL(Max(label_line_number),0)+1 from labels where linkage_index= A.linkage_index)" +
+                                        " as labelNo from labels A join label_values lv on lv.label_value_index = A.label_value_index" +
+                                        " where label_name_index = " + Key_Index + " and  lv.label_value " + sqlExpression + ") order by linkage_index";
+
+                }
+                else
+                {
+                    parentCursorForSP = "DECLARE Linkage_Index CURSOR FOR" +
+                                         " (select linkage_index,(select ISNULL(Max(label_line_number),0)+1 from labels where linkage_index= A.linkage_index)" +
+                                         " as labelNo from labels A where label_name_index = " + Key_Index + " )order by linkage_index";
+                }
+                //--------------------------------
+
                 //If there are new properties add it to all linkages of that object.
                 if (datatable.Rows.Count > 0)
                 {
                     SqlCommand comm = new SqlCommand("UPDATE_LabelNames", _conn);
                     comm.CommandType = CommandType.StoredProcedure;
                     comm.Parameters.Add(new SqlParameter("SpoolIndex", Key_Index));
+                    comm.Parameters.Add(new SqlParameter("parentCursor", parentCursorForSP));
                     comm.Parameters.Add(new SqlParameter("tblLabelIndexes", datatable));
                     comm.CommandTimeout = 10000;
                     comm.ExecuteNonQuery();
                     _logFile.WriteLine("New properties are added on all linkages with null values");
                 }
-                else if(_updateProperties.Count > 0) // Incase there are no new properties, still we want to update the value.
+                //No Else Case required - As per the discussion with draius we need not to put null on all linkages of that object 
+                //simply override the values coming from proxy, old should remain there.***Dated : 27.06.13***
+
+                /*else if(_updateProperties.Count > 0) // Incase there are no new properties, still we want to update the value.
                 {                                    // So put null on all linkages of that object before update.
                     string propIndexes = string.Empty;
                     foreach (KeyValuePair<int, DataProperty> keyVal in _updateProperties)
@@ -1695,7 +1765,7 @@ namespace Bechtel.iRING.SPR
                         _logFile.WriteLine("New properties are set to null values");
                     else
                         _logFile.WriteLine("No linkages found for the new properties");
-                }
+                }*/
             }
             catch (Exception ex)
             {

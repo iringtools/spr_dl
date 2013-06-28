@@ -1,0 +1,42 @@
+USE [SPR]
+GO
+/****** Object:  StoredProcedure [dbo].[UPDATE_LabelValues]    Script Date: 06/28/2013 12:21:17 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+-- This procedure will update the value of the given label or property related 
+-- to a specified tag.
+ALTER PROCEDURE [dbo].[UPDATE_LabelValues](
+@Tag varchar(30),
+@labelNameIndex INT,
+@labelValueIndex INT
+)
+
+AS
+BEGIN
+ declare @nextIndex INT
+ 
+  -- Loop through all the linkages of the specified tag.
+  DECLARE Linkage_Index CURSOR                 
+      FOR select linkage_index from labels join label_values on 
+                 labels.label_value_index = label_values.label_value_index
+                 where label_values.label_value = @Tag
+ 
+    OPEN Linkage_Index  
+    FETCH NEXT FROM Linkage_Index INTO @nextIndex 
+
+    WHILE @@FETCH_STATUS = 0  
+    BEGIN  
+           -- Update the value. 
+           update labels set label_value_index = @labelValueIndex where linkage_index = @nextIndex and label_name_index = @labelNameIndex
+       
+           FETCH NEXT FROM Linkage_Index  
+           INTO @nextIndex 
+    End  
+    
+    CLOSE Linkage_Index;  
+    DEALLOCATE Linkage_Index;  
+
+END
