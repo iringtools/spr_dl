@@ -327,7 +327,7 @@ namespace Bechtel.iRING.SPR
             }
             try
             {
-                query = "SELECT * FROM " + tableName + " where " + tempQry;
+                query = "SELECT * FROM [" + tableName + "] where " + tempQry;
                 ConnectToSqL();
                 _adapter = new SqlDataAdapter();
                 _adapter.SelectCommand = new SqlCommand(query, _conn);
@@ -369,26 +369,26 @@ namespace Bechtel.iRING.SPR
             {
                 if (start == limit)
                 {
-                    query = "select * from (SELECT *, ROW_NUMBER() OVER (order by " + keyColumn + ") AS RN FROM " + tableName +
-                            ") As " + tableName ;
+                    query = "select * from (SELECT *, ROW_NUMBER() OVER (order by " + keyColumn + ") AS RN FROM [" + tableName +
+                            "]) As [" + tableName + "]" ;
                 }
                 else
                 {
-                    query = "select * from (SELECT *, ROW_NUMBER() OVER (order by " + keyColumn + ") AS RN FROM " + tableName +
-                              ") As " + tableName + " where RN >" + start + " and " + "RN <=" + (start + limit);
+                    query = "select * from (SELECT *, ROW_NUMBER() OVER (order by " + keyColumn + ") AS RN FROM [" + tableName +
+                              "]) As [" + tableName + "] where RN >" + start + " and " + "RN <=" + (start + limit);
                 }
             }
             else
             {
                 if (start == limit)
                 {
-                    query = "select * from (SELECT *, ROW_NUMBER() OVER (order by " + keyColumn + ") AS RN FROM " + tableName +
-                              ") As " + tableName + whereClause;
+                    query = "select * from (SELECT *, ROW_NUMBER() OVER (order by " + keyColumn + ") AS RN FROM [" + tableName +
+                              "]) As [" + tableName + "] " + whereClause;
                 }
                 else
                 {
-                    query = "select * from (SELECT *, ROW_NUMBER() OVER (order by " + keyColumn + ") AS RN FROM " + tableName +
-                              ") As " + tableName + whereClause + " and RN >" + start + " and " + "RN <=" + (start + limit);
+                    query = "select * from (SELECT *, ROW_NUMBER() OVER (order by " + keyColumn + ") AS RN FROM [" + tableName +
+                              "]) As [" + tableName + "] " + whereClause + " and RN >" + start + " and " + "RN <=" + (start + limit);
                 }
             }
 
@@ -520,7 +520,7 @@ namespace Bechtel.iRING.SPR
                                   select dobjects).ToList();
 
                 var lstKeys = (from kProperties in lstObjects.First().keyProperties
-                             select kProperties).ToList();
+                               select kProperties).ToList();
 
                 var list = (from dProperties in lstObjects.First().dataProperties
                             where dProperties.propertyName == lstKeys.First().keyPropertyName
@@ -566,8 +566,8 @@ namespace Bechtel.iRING.SPR
                     val = string.Empty;
                 }
 
-                if (!string.IsNullOrEmpty(val))  // If the value is not blank, only then we are updating the value else there is no need.because blank is already applied to new properties by default.
-                {
+              //  if (!string.IsNullOrEmpty(val))  // If the value is not blank, only then we are updating the value else there is no need.because blank is already applied to new properties by default.
+               // {
                     string query = "SELECT ISNULL(MAX(label_value_index),0)+1 FROM label_values";
                     SqlCommand comm = new SqlCommand(query, _conn);
                     int iLastValueIndex = (Int32)comm.ExecuteScalar();
@@ -609,7 +609,7 @@ namespace Bechtel.iRING.SPR
                     comm.CommandTimeout = 10000;
                     comm.ExecuteNonQuery();
 
-                }
+              //  }
             }
         }
 
@@ -1555,6 +1555,9 @@ namespace Bechtel.iRING.SPR
 
                     var list = from dProperties in lstObjects[0].dataProperties
                                select dProperties;
+                    var keyPropList = from kProperties in lstObjects[0].keyProperties
+                                      select kProperties.keyPropertyName;
+                
 
                     _newProperties = new Dictionary<int, DataProperty>();
 
@@ -1597,7 +1600,7 @@ namespace Bechtel.iRING.SPR
                         }
                         else // If property Found, get the indexes because we have to update it.
                         {
-                            if (_labelname != property.propertyName)
+                            if (_labelname != property.propertyName && !keyPropList.Contains(property.propertyName))
                             {
                                 InitialQuery = "select label_name_index from label_names where label_name = '" + property.propertyName + "'";
                                 comm = new SqlCommand(InitialQuery, _conn);
@@ -1678,11 +1681,12 @@ namespace Bechtel.iRING.SPR
                     datatable.Rows.Add(_row);
                 }
 
-                //---Implement filter here so that we can pass it to sp.
-
-                //DataSet dsDataFilter = new DataSet("dataFilter");
-                //string filterPath = String.Format("{0}{1}{2}.xml", _baseDirectory, _xmlPath, "Filter");
-                //dsDataFilter.ReadXml(filterPath);
+                foreach (int newLabelIndex in _updateProperties.Keys)
+                {
+                    DataRow _row = datatable.NewRow();
+                    _row["labelNameIndexes"] = newLabelIndex;
+                    datatable.Rows.Add(_row);
+                }
 
                 DataRow row = (from DataRow dr in dsFilter.Tables[0].Rows
                           where (string)dr["objectName"] == _objectType
@@ -1698,19 +1702,19 @@ namespace Bechtel.iRING.SPR
                     {
                         sqlExpression.Append(" LIKE '" + value.Replace("'", "''") + "%'");
                     }
-                    else if (relationalOperator.ToLower() == "EndsWith")
+                    else if (relationalOperator.ToLower() == "endswith")
                     {
                         sqlExpression.Append(" LIKE '%" + value.Replace("'", "''") + "'");
                     }
-                    else if (relationalOperator.ToLower() == "Contains")
+                    else if (relationalOperator.ToLower() == "contains")
                     {
                         sqlExpression.Append(" LIKE '%" + value.Replace("'", "''") + "%'");
                     }
-                    else if (relationalOperator.ToLower() == "EqualTo")
+                    else if (relationalOperator.ToLower() == "equalto")
                     {
                         sqlExpression.Append("='" + value.Replace("'", "''") + "'");
                     }
-                    else if (relationalOperator.ToLower() == "NotEqualTo")
+                    else if (relationalOperator.ToLower() == "notequalto")
                     {
                         sqlExpression.Append("<>'" + value.Replace("'", "''") + "'");
                     }
@@ -1741,7 +1745,7 @@ namespace Bechtel.iRING.SPR
                     comm.ExecuteNonQuery();
                     _logFile.WriteLine("New properties are added on all linkages with null values");
                 }
-                //No Else Case required - As per the discussion with draius we need not to put null on all linkages of that object 
+                //No Else Case required - As per the discussion with darius we need not to put null on all linkages of that object 
                 //simply override the values coming from proxy, old should remain there.***Dated : 27.06.13***
 
                 /*else if(_updateProperties.Count > 0) // Incase there are no new properties, still we want to update the value.

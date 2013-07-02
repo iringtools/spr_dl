@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using org.iringtools.adapter;
@@ -55,14 +55,19 @@ namespace Bechtel.iRING.SPRUtility
        /// <summary>
        /// This would be called After Exchange and it will update the MDB.
        /// </summary>
-        public void MDBSynchronization(string objectType)
+        public void MDBSynchronization(List<string> lstCommodities)
         {
             try
             {
                 _logFile.WriteLine("Copy the database from Mdb in to SQL.");
                 Response response = _dataLayer.RefreshAll();
-                IList<IDataObject> dataObjects = _dataLayer.Get(objectType, new DataFilter(), 0, 0);
-                response = _dataLayer.Post(dataObjects);
+                foreach (string objectType in lstCommodities)
+                {
+                    _logFile.WriteLine("Processing commodity :" + objectType);
+                    IList<IDataObject> dataObjects = _dataLayer.Get(objectType, new DataFilter(), 0, 0);
+                    response = _dataLayer.Post(dataObjects);
+                    _logFile.WriteLine("Processed commodity :" + objectType);
+                }
                 _dataLayer.ReverseRefresh();
                 _logFile.WriteLine("Copy the database from SQL in to Mdb.");
             }

@@ -38,12 +38,13 @@
             this.txtMdbName = new System.Windows.Forms.TextBox();
             this.lblStatusName = new System.Windows.Forms.Label();
             this.lblStatus = new System.Windows.Forms.Label();
+            this.clistboxCommodities = new System.Windows.Forms.CheckedListBox();
             this.SuspendLayout();
             // 
             // lblSelect
             // 
             this.lblSelect.AutoSize = true;
-            this.lblSelect.Location = new System.Drawing.Point(5, 21);
+            this.lblSelect.Location = new System.Drawing.Point(5, 18);
             this.lblSelect.Name = "lblSelect";
             this.lblSelect.Size = new System.Drawing.Size(117, 13);
             this.lblSelect.TabIndex = 0;
@@ -53,14 +54,15 @@
             // 
             this.cboxCommodities.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboxCommodities.FormattingEnabled = true;
-            this.cboxCommodities.Location = new System.Drawing.Point(124, 21);
+            this.cboxCommodities.Location = new System.Drawing.Point(97, 262);
             this.cboxCommodities.Name = "cboxCommodities";
             this.cboxCommodities.Size = new System.Drawing.Size(239, 21);
             this.cboxCommodities.TabIndex = 1;
+            this.cboxCommodities.Visible = false;
             // 
             // btnGo
             // 
-            this.btnGo.Location = new System.Drawing.Point(306, 89);
+            this.btnGo.Location = new System.Drawing.Point(306, 79);
             this.btnGo.Name = "btnGo";
             this.btnGo.Size = new System.Drawing.Size(57, 23);
             this.btnGo.TabIndex = 2;
@@ -70,7 +72,7 @@
             // 
             // btnCancel
             // 
-            this.btnCancel.Location = new System.Drawing.Point(243, 89);
+            this.btnCancel.Location = new System.Drawing.Point(243, 79);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(57, 23);
             this.btnCancel.TabIndex = 3;
@@ -80,7 +82,7 @@
             // 
             // btnBrowse
             // 
-            this.btnBrowse.Location = new System.Drawing.Point(306, 50);
+            this.btnBrowse.Location = new System.Drawing.Point(306, 45);
             this.btnBrowse.Name = "btnBrowse";
             this.btnBrowse.Size = new System.Drawing.Size(57, 23);
             this.btnBrowse.TabIndex = 4;
@@ -91,7 +93,7 @@
             // lbl2
             // 
             this.lbl2.AutoSize = true;
-            this.lbl2.Location = new System.Drawing.Point(5, 48);
+            this.lbl2.Location = new System.Drawing.Point(5, 52);
             this.lbl2.Name = "lbl2";
             this.lbl2.Size = new System.Drawing.Size(101, 13);
             this.lbl2.TabIndex = 5;
@@ -99,7 +101,7 @@
             // 
             // txtMdbName
             // 
-            this.txtMdbName.Location = new System.Drawing.Point(124, 50);
+            this.txtMdbName.Location = new System.Drawing.Point(124, 48);
             this.txtMdbName.Name = "txtMdbName";
             this.txtMdbName.ReadOnly = true;
             this.txtMdbName.Size = new System.Drawing.Size(176, 20);
@@ -108,7 +110,7 @@
             // lblStatusName
             // 
             this.lblStatusName.AutoSize = true;
-            this.lblStatusName.Location = new System.Drawing.Point(8, 98);
+            this.lblStatusName.Location = new System.Drawing.Point(5, 89);
             this.lblStatusName.Name = "lblStatusName";
             this.lblStatusName.Size = new System.Drawing.Size(46, 13);
             this.lblStatusName.TabIndex = 7;
@@ -117,17 +119,29 @@
             // lblStatus
             // 
             this.lblStatus.AutoSize = true;
-            this.lblStatus.Location = new System.Drawing.Point(52, 98);
+            this.lblStatus.Location = new System.Drawing.Point(47, 89);
             this.lblStatus.Name = "lblStatus";
             this.lblStatus.Size = new System.Drawing.Size(41, 13);
             this.lblStatus.TabIndex = 8;
             this.lblStatus.Text = "Started";
             // 
+            // clistboxCommodities
+            // 
+            this.clistboxCommodities.CheckOnClick = true;
+            this.clistboxCommodities.FormattingEnabled = true;
+            this.clistboxCommodities.Location = new System.Drawing.Point(124, 7);
+            this.clistboxCommodities.MultiColumn = true;
+            this.clistboxCommodities.Name = "clistboxCommodities";
+            this.clistboxCommodities.Size = new System.Drawing.Size(239, 34);
+            this.clistboxCommodities.TabIndex = 10;
+            this.clistboxCommodities.SelectedIndexChanged += new System.EventHandler(this.checkedListBox1_SelectedIndexChanged);
+            // 
             // FrmSPRSynchronizationUtility
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(371, 123);
+            this.ClientSize = new System.Drawing.Size(371, 112);
+            this.Controls.Add(this.clistboxCommodities);
             this.Controls.Add(this.lblStatus);
             this.Controls.Add(this.lblStatusName);
             this.Controls.Add(this.txtMdbName);
@@ -163,6 +177,7 @@
         private System.Windows.Forms.TextBox txtMdbName;
         private System.Windows.Forms.Label lblStatusName;
         private System.Windows.Forms.Label lblStatus;
+        private System.Windows.Forms.CheckedListBox clistboxCommodities;
     }
 }
 

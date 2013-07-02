@@ -45,14 +45,16 @@ namespace Bechtel.iRING.SPRUtility
                     return;
                 }
 
-                string selectedObject = ((org.iringtools.library.DataObject)(cboxCommodities.Items[cboxCommodities.SelectedIndex])).objectName.ToString();
+                var lstitems = (from string item in clistboxCommodities.CheckedItems select item).ToList<string>();
 
-                if (!string.IsNullOrEmpty(selectedObject))
+                //  string selectedObject = ((org.iringtools.library.DataObject)(cboxCommodities.Items[cboxCommodities.SelectedIndex])).objectName.ToString();
+                // if (!string.IsNullOrEmpty(selectedObject))
+                if (clistboxCommodities.CheckedItems.Count > 0)
                 {
                     lblStatus.Text = "Processing.... please wait";
                     Application.DoEvents();
 
-                    syncUtility.MDBSynchronization(selectedObject);
+                    syncUtility.MDBSynchronization(lstitems);
 
                     lblStatus.Text = "Completed";
                     Application.DoEvents();
@@ -63,7 +65,7 @@ namespace Bechtel.iRING.SPRUtility
                     return;
                 }
 
-                DialogResult dialogResult = MessageBox.Show("Mdb file updated for component : '" + selectedObject + "'. Do you want to continue?", "Message", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                DialogResult dialogResult = MessageBox.Show("Mdb file updated for the selected components. Do you want to continue?", "Message", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
 
                 if (dialogResult == DialogResult.No)
                 {
@@ -82,20 +84,26 @@ namespace Bechtel.iRING.SPRUtility
             }
             finally
             {
-                
+
             }
         }
 
         private void FrmSPRSynchronizationUtility_Load(object sender, EventArgs e)
         {
             List<org.iringtools.library.DataObject> objects = syncUtility.GetObjects();
-            List<string> items = new List<string>();
-            cboxCommodities.Items.Clear();
-            cboxCommodities.Items.Add(string.Empty);
-            cboxCommodities.DataSource = objects;
 
-            cboxCommodities.DisplayMember = "objectName";
-            cboxCommodities.ValueMember = "objectName";
+            clistboxCommodities.Items.Clear();
+            foreach (org.iringtools.library.DataObject obj in objects)
+            {
+                clistboxCommodities.Items.Add(obj.objectName); 
+            }
+
+            //cboxCommodities.Items.Clear();
+            //cboxCommodities.Items.Add(string.Empty);
+            //cboxCommodities.DataSource = objects;
+
+            //cboxCommodities.DisplayMember = "objectName";
+            //cboxCommodities.ValueMember = "objectName";
         }
 
         private void btnBrowse_Click(object sender, EventArgs e)
@@ -129,6 +137,11 @@ namespace Bechtel.iRING.SPRUtility
                 logFile.WriteLine();
                 logFile.Close();
             }
+        }
+
+        private void checkedListBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }
