@@ -37,7 +37,6 @@ namespace Bechtel.iRING.SPR
         private static readonly ILog logger = LogManager.GetLogger(typeof(SPRDataLayer));
         private int Key_Index = 0;
         private Dictionary<int, DataProperty> _newProperties = new Dictionary<int, DataProperty>();
-        private Dictionary<int, DataProperty> _updateProperties = new Dictionary<int, DataProperty>();
         private string _objectType = string.Empty;
         private StreamWriter _logFile = null;
         private DataSet dsFilter = null;
@@ -532,10 +531,6 @@ namespace Bechtel.iRING.SPR
                 if (_newProperties.Count > 0)
                 {
                     UpdateLabelValues(row, tagvalue, _newProperties);
-                }
-                else if (_updateProperties.Count > 0)
-                {
-                    UpdateLabelValues(row, tagvalue, _updateProperties);
                 }
             }
             catch (Exception ex)
@@ -1295,7 +1290,9 @@ namespace Bechtel.iRING.SPR
                 commandee.Connection = _connOledb;
                 commandee.CommandText = q;
 
+                _logFile.WriteLine("Start backup SQL to Mdb at : " + DateTime.Now);
                 commandee.ExecuteNonQuery();
+                _logFile.WriteLine("End backup SQL to Mdb at : " + DateTime.Now);
                 //---- Bulk Update Labels - Completed.
 
                 status = "success";
@@ -1529,7 +1526,6 @@ namespace Bechtel.iRING.SPR
                     _labelname = Convert.ToString(row["propertyName"]);
                 }
 
-                _updateProperties.Clear();
                 ConnectToSqL();
                 string InitialQuery = "select label_name_index from label_names	where label_name = '" + _labelname +"'";
 
@@ -1606,7 +1602,7 @@ namespace Bechtel.iRING.SPR
                                 comm = new SqlCommand(InitialQuery, _conn);
                                 int label_name_index = (Int32)comm.ExecuteScalar();
 
-                                _updateProperties.Add(label_name_index, property);
+                                _newProperties.Add(label_name_index, property);
                             }
                         }
                     }
@@ -1681,20 +1677,13 @@ namespace Bechtel.iRING.SPR
                     datatable.Rows.Add(_row);
                 }
 
-                foreach (int newLabelIndex in _updateProperties.Keys)
-                {
-                    DataRow _row = datatable.NewRow();
-                    _row["labelNameIndexes"] = newLabelIndex;
-                    datatable.Rows.Add(_row);
-                }
-
                 DataRow row = (from DataRow dr in dsFilter.Tables[0].Rows
                           where (string)dr["objectName"] == _objectType
                           select dr).FirstOrDefault();
 
                 string parentCursorForSP = string.Empty;
                 StringBuilder sqlExpression = new StringBuilder();
-                if (row != null)
+                if (row != null) // Assuming that the filter would contain only the relational operators, not the logical one.
                 {
                     string relationalOperator = row["relationalOperator"].ToString();
                     string value = row["value"].ToString();
@@ -1743,7 +1732,7 @@ namespace Bechtel.iRING.SPR
                     comm.Parameters.Add(new SqlParameter("tblLabelIndexes", datatable));
                     comm.CommandTimeout = 10000;
                     comm.ExecuteNonQuery();
-                    _logFile.WriteLine("New properties are added on all linkages with null values");
+                    _logFile.WriteLine("New labels are added on all linkages with null values");
                 }
                 //No Else Case required - As per the discussion with darius we need not to put null on all linkages of that object 
                 //simply override the values coming from proxy, old should remain there.***Dated : 27.06.13***

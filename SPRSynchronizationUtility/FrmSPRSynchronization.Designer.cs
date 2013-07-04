@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmSPRSynchronizationUtility));
             this.lblSelect = new System.Windows.Forms.Label();
             this.cboxCommodities = new System.Windows.Forms.ComboBox();
             this.btnGo = new System.Windows.Forms.Button();
@@ -153,10 +154,10 @@
             this.Controls.Add(this.lblSelect);
             this.Cursor = System.Windows.Forms.Cursors.Default;
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "FrmSPRSynchronizationUtility";
-            this.ShowIcon = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "SPR Synchronization Utility";
             this.Load += new System.EventHandler(this.FrmSPRSynchronizationUtility_Load);

@@ -97,6 +97,10 @@ namespace Bechtel.iRING.SPRUtility
             {
                 clistboxCommodities.Items.Add(obj.objectName); 
             }
+            for (int i = 0; i < clistboxCommodities.Items.Count; i++)
+            {
+                clistboxCommodities.SetItemChecked(i, true);
+            }
 
             //cboxCommodities.Items.Clear();
             //cboxCommodities.Items.Add(string.Empty);
