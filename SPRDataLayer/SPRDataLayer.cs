@@ -437,13 +437,19 @@ namespace Bechtel.iRING.SPR
                 AddLabelProperties();    // Adding Properties.
                 AddlabelsOnLinkages();   // Adding blank values for new properties on all linkages of the object(spool)
 
-                //For each row in proxy table update Label,Label name and Label Values.
-                DataTable datatable = new DataTable();
-                datatable = dataTables[0];
-                foreach (DataRow row in datatable.Rows)
+
+                if (_newProperties.Count > 0)
                 {
-                    UpdateOnEveryPost(row);
+                    UpdateLabelValues(_newProperties,tableName);
                 }
+
+                ////For each row in proxy table update Label,Label name and Label Values.
+                //DataTable datatable = new DataTable();
+                //datatable = dataTables[0];
+                //foreach (DataRow row in datatable.Rows)
+                //{
+                //    UpdateOnEveryPost(row);
+                //}
                 _logFile.WriteLine("Values are updated on all linkages");
                 status = "success";
                 #region OLDPostLogicdirectlyOnTable
@@ -530,7 +536,7 @@ namespace Bechtel.iRING.SPR
 
                 if (_newProperties.Count > 0)
                 {
-                    UpdateLabelValues(row, tagvalue, _newProperties);
+                   // UpdateLabelValues(row, tagvalue, _newProperties);
                 }
             }
             catch (Exception ex)
@@ -548,63 +554,19 @@ namespace Bechtel.iRING.SPR
         /// <summary>
         /// 
         /// </summary>
-        private void UpdateLabelValues(DataRow row, string Tagvalue, Dictionary<int, DataProperty> lstproperties)
+        private void UpdateLabelValues(Dictionary<int, DataProperty> lstproperties, string tableName)
         {
-            OleDbCommand commOledb = null;
             foreach (KeyValuePair<int, DataProperty> keyVal in lstproperties)
             {
-                // Inserting in Label Value...
+                // This procedure will update the value for new property on the linkages associated with the tag.  
+                SqlCommand comm = new SqlCommand("UPDATE_LabelValues", _conn);
+                comm.CommandType = CommandType.StoredProcedure;
 
-                string val = Convert.ToString(row[keyVal.Value.columnName]);
-                if (val == null)  // We cannot insert null so converting into blank.
-                {
-                    val = string.Empty;
-                }
-
-              //  if (!string.IsNullOrEmpty(val))  // If the value is not blank, only then we are updating the value else there is no need.because blank is already applied to new properties by default.
-               // {
-                    string query = "SELECT ISNULL(MAX(label_value_index),0)+1 FROM label_values";
-                    SqlCommand comm = new SqlCommand(query, _conn);
-                    int iLastValueIndex = (Int32)comm.ExecuteScalar();
-
-
-                    query = "select count(*) from label_values where label_value= '" + val + "'";
-                    comm = new SqlCommand(query, _conn);
-                    int count = (Int32)comm.ExecuteScalar();
-
-                    //If value for new properties not found in label_values , insert it.
-                    if (count == 0)
-                    {
-                        double lblValNumeric = ConvertToDouble(val);  // Numeric conversion .
-                        query = "insert into label_values (label_value_index,label_value, label_value_numeric) values ( " +
-                                 iLastValueIndex + ",'" + val + "','" + lblValNumeric + "' )";
-
-                        comm = new SqlCommand(query, _conn);
-                        comm.ExecuteNonQuery();
-
-                        //Insert into Access simultaneously - Start
-                        commOledb = new OleDbCommand(query, _connOledb);
-                        commOledb.ExecuteNonQuery();
-                        //Insert into Access  simultaneously - End
-                    }
-                    else
-                    {
-                        query = "select Top 1 label_value_index from label_values where label_value= '" + val + "'";
-                        comm = new SqlCommand(query, _conn);
-                        iLastValueIndex = (Int32)comm.ExecuteScalar();
-                    }
-
-
-                    // This procedure will update the value for new property on the linkages associated with the tag.  
-                    comm = new SqlCommand("UPDATE_LabelValues", _conn);
-                    comm.CommandType = CommandType.StoredProcedure;
-                    comm.Parameters.Add(new SqlParameter("Tag", Tagvalue));
-                    comm.Parameters.Add(new SqlParameter("labelNameIndex", keyVal.Key));
-                    comm.Parameters.Add(new SqlParameter("labelValueIndex", iLastValueIndex));
-                    comm.CommandTimeout = 10000;
-                    comm.ExecuteNonQuery();
-
-              //  }
+                comm.Parameters.Add(new SqlParameter("labelNameIndex", keyVal.Key));
+                comm.Parameters.Add(new SqlParameter("labelName", keyVal.Value.columnName));
+                comm.Parameters.Add(new SqlParameter("TableName", tableName));
+                comm.CommandTimeout = 1000000;
+                comm.ExecuteNonQuery();
             }
         }
 
@@ -1102,6 +1064,22 @@ namespace Bechtel.iRING.SPR
                             sqlcomm.ExecuteNonQuery();
                         }
 
+                        if (strSheetTableName == "label_values")
+                        {
+
+                            sqlcomm.CommandText = string.Format(SqlConstant.ifPrimaryKey, strSheetTableName);
+                            string primaryKey = Convert.ToString(sqlcomm.ExecuteScalar());
+
+                            if (!string.IsNullOrEmpty(primaryKey))
+                            {
+                                sqlcomm.CommandText = string.Format(SqlConstant.dropPrimaryKey, strSheetTableName, primaryKey);
+                                sqlcomm.ExecuteNonQuery();
+                            }
+
+                            sqlcomm.CommandText = SqlConstant.IndexOn_tblLabel_Values;
+                            sqlcomm.ExecuteNonQuery();
+                        }
+
                         OleDbCommand command = new OleDbCommand();
                         command.Connection = _connOledb;
                         DataTable tableColumns = _connOledb.GetOleDbSchemaTable(OleDbSchemaGuid.Columns, new object[] { null, null, strSheetTableName, null });
@@ -1256,6 +1234,12 @@ namespace Bechtel.iRING.SPR
                 commandee.CommandText = q;
                 commandee.ExecuteNonQuery();
 
+                q = "DELETE FROM label_values";
+                commandee = new OleDbCommand();
+                commandee.Connection = _connOledb;
+                commandee.CommandText = q;
+                commandee.ExecuteNonQuery();
+
                 // Creating the Connection to import data from SQL to Access db.
                 string server = string.Empty; string db = string.Empty;
                 string user = string.Empty; string pwd = string.Empty;
@@ -1290,9 +1274,20 @@ namespace Bechtel.iRING.SPR
                 commandee.Connection = _connOledb;
                 commandee.CommandText = q;
 
-                _logFile.WriteLine("Start backup SQL to Mdb at : " + DateTime.Now);
-                commandee.ExecuteNonQuery();
-                _logFile.WriteLine("End backup SQL to Mdb at : " + DateTime.Now);
+                _logFile.WriteLine("Copy Labels from SQL to Mdb at : " + DateTime.Now);
+                int rcount = commandee.ExecuteNonQuery();
+                _logFile.WriteLine("Copied Labels with row count: " + rcount + " from SQL to Mdb at : " + DateTime.Now);
+
+
+                // update label values table too.
+                q = "Insert INTO label_values (label_value_index,label_value,label_value_numeric) select label_value_index,label_value,label_value_numeric FROM [" + connSqlImport + "].label_values";
+                commandee = new OleDbCommand();
+                commandee.Connection = _connOledb;
+                commandee.CommandText = q;
+
+                _logFile.WriteLine("Copy label_values from SQL to Mdb at : " + DateTime.Now);
+                rcount = commandee.ExecuteNonQuery();
+                _logFile.WriteLine("Copied label_values with row count: " + rcount + " from SQL to Mdb at : " + DateTime.Now);
                 //---- Bulk Update Labels - Completed.
 
                 status = "success";

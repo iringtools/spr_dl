@@ -38,7 +38,7 @@
 			<dataRelationships/>
 		</dataObject>
     <dataObject>
-      <tableName>VALVE_VIEW</tableName>
+      <tableName>VALVE.VIEW</tableName>
       <objectName>Valve</objectName>
       <keyDelimeter>_</keyDelimeter>
       <keyProperties>
