@@ -16,21 +16,32 @@ namespace Bechtel.iRING.SPRUtility
         private AdapterSettings _adapterSettings;
         private SPRDataLayer _dataLayer;
         StreamWriter _logFile = null;
+        private StaticDust.Configuration.AppSettingsReader _utilitySettings;
 
-        public SPRSynchronizationUtility(StreamWriter logFile)
+        public SPRSynchronizationUtility(StreamWriter logFile, string scopeName)
         {
             _logFile = logFile;
             _settings = new NameValueCollection();
-
-            _settings["ProjectName"] = "12345_000";
-            _settings["XmlPath"] = @".\App_Data\";
-            _settings["ApplicationName"] = "SQL";
+           _settings["XmlPath"] = @".\App_Data\";
 
             _baseDirectory = Directory.GetCurrentDirectory();
-            _baseDirectory = _baseDirectory.Substring(0, _baseDirectory.LastIndexOf("\\bin")); 
 
+            if (_baseDirectory.Contains("\\bin"))
+            {
+                _baseDirectory = _baseDirectory.Substring(0, _baseDirectory.LastIndexOf("\\bin"));  
+                Directory.SetCurrentDirectory(_baseDirectory);
+            }
             _settings["BaseDirectoryPath"] = _baseDirectory;
-            Directory.SetCurrentDirectory(_baseDirectory);
+
+            if (scopeName.Contains("."))
+            {
+                _settings["ProjectName"] =  scopeName.Substring(0, scopeName.IndexOf("."));
+                _settings["ApplicationName"] = scopeName.Substring(scopeName.IndexOf(".") + 1 );
+            }
+            //string _appConfigXML = String.Format("{0}utility.config", _settings["XmlPath"]);
+            //_utilitySettings = new StaticDust.Configuration.AppSettingsReader(_appConfigXML);
+            //_settings["ProjectName"] = Convert.ToString(_utilitySettings["ProjectName"]);
+            //_settings["ApplicationName"] = Convert.ToString(_utilitySettings["ApplicationName"]);
 
             _adapterSettings = new AdapterSettings();
             _adapterSettings.AppendSettings(_settings);
@@ -39,7 +50,6 @@ namespace Bechtel.iRING.SPRUtility
                 _settings["ProjectName"],
                 _settings["ApplicationName"]
             );
-
            
             if (File.Exists(appSettingsPath))
             {
@@ -63,13 +73,14 @@ namespace Bechtel.iRING.SPRUtility
                 Response response = _dataLayer.RefreshAll();
                 foreach (string objectType in lstCommodities)
                 {
-                    _logFile.WriteLine("Processing commodity :" + objectType);
+                    _logFile.WriteLine("Processing commodity :-" + objectType + " -Start time : " + DateTime.Now);
                     IList<IDataObject> dataObjects = _dataLayer.Get(objectType, new DataFilter(), 0, 0);
                     response = _dataLayer.Post(dataObjects);
-                    _logFile.WriteLine("Processed commodity :" + objectType);
+                    _logFile.WriteLine("Processed commodity :-" + objectType + " -End time : " + DateTime.Now);
+                    _logFile.WriteLine();
                 }
                 _dataLayer.ReverseRefresh();
-                _logFile.WriteLine("Copy the database from SQL in to Mdb.");
+                _logFile.WriteLine("Copied the database from SQL in to Mdb.");
             }
             catch(Exception ex)
             {

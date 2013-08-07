@@ -40,12 +40,14 @@
             this.lblStatusName = new System.Windows.Forms.Label();
             this.lblStatus = new System.Windows.Forms.Label();
             this.clistboxCommodities = new System.Windows.Forms.CheckedListBox();
+            this.clistboxScopes = new System.Windows.Forms.CheckedListBox();
+            this.lblscope = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // lblSelect
             // 
             this.lblSelect.AutoSize = true;
-            this.lblSelect.Location = new System.Drawing.Point(5, 18);
+            this.lblSelect.Location = new System.Drawing.Point(5, 51);
             this.lblSelect.Name = "lblSelect";
             this.lblSelect.Size = new System.Drawing.Size(117, 13);
             this.lblSelect.TabIndex = 0;
@@ -55,7 +57,7 @@
             // 
             this.cboxCommodities.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboxCommodities.FormattingEnabled = true;
-            this.cboxCommodities.Location = new System.Drawing.Point(97, 262);
+            this.cboxCommodities.Location = new System.Drawing.Point(97, 317);
             this.cboxCommodities.Name = "cboxCommodities";
             this.cboxCommodities.Size = new System.Drawing.Size(239, 21);
             this.cboxCommodities.TabIndex = 1;
@@ -63,7 +65,7 @@
             // 
             // btnGo
             // 
-            this.btnGo.Location = new System.Drawing.Point(306, 79);
+            this.btnGo.Location = new System.Drawing.Point(306, 113);
             this.btnGo.Name = "btnGo";
             this.btnGo.Size = new System.Drawing.Size(57, 23);
             this.btnGo.TabIndex = 2;
@@ -73,7 +75,7 @@
             // 
             // btnCancel
             // 
-            this.btnCancel.Location = new System.Drawing.Point(243, 79);
+            this.btnCancel.Location = new System.Drawing.Point(243, 113);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(57, 23);
             this.btnCancel.TabIndex = 3;
@@ -83,7 +85,7 @@
             // 
             // btnBrowse
             // 
-            this.btnBrowse.Location = new System.Drawing.Point(306, 45);
+            this.btnBrowse.Location = new System.Drawing.Point(306, 85);
             this.btnBrowse.Name = "btnBrowse";
             this.btnBrowse.Size = new System.Drawing.Size(57, 23);
             this.btnBrowse.TabIndex = 4;
@@ -94,7 +96,7 @@
             // lbl2
             // 
             this.lbl2.AutoSize = true;
-            this.lbl2.Location = new System.Drawing.Point(5, 52);
+            this.lbl2.Location = new System.Drawing.Point(5, 86);
             this.lbl2.Name = "lbl2";
             this.lbl2.Size = new System.Drawing.Size(101, 13);
             this.lbl2.TabIndex = 5;
@@ -102,7 +104,7 @@
             // 
             // txtMdbName
             // 
-            this.txtMdbName.Location = new System.Drawing.Point(124, 48);
+            this.txtMdbName.Location = new System.Drawing.Point(124, 85);
             this.txtMdbName.Name = "txtMdbName";
             this.txtMdbName.ReadOnly = true;
             this.txtMdbName.Size = new System.Drawing.Size(176, 20);
@@ -111,7 +113,7 @@
             // lblStatusName
             // 
             this.lblStatusName.AutoSize = true;
-            this.lblStatusName.Location = new System.Drawing.Point(5, 89);
+            this.lblStatusName.Location = new System.Drawing.Point(5, 123);
             this.lblStatusName.Name = "lblStatusName";
             this.lblStatusName.Size = new System.Drawing.Size(46, 13);
             this.lblStatusName.TabIndex = 7;
@@ -120,7 +122,7 @@
             // lblStatus
             // 
             this.lblStatus.AutoSize = true;
-            this.lblStatus.Location = new System.Drawing.Point(47, 89);
+            this.lblStatus.Location = new System.Drawing.Point(47, 123);
             this.lblStatus.Name = "lblStatus";
             this.lblStatus.Size = new System.Drawing.Size(41, 13);
             this.lblStatus.TabIndex = 8;
@@ -130,18 +132,38 @@
             // 
             this.clistboxCommodities.CheckOnClick = true;
             this.clistboxCommodities.FormattingEnabled = true;
-            this.clistboxCommodities.Location = new System.Drawing.Point(124, 7);
-            this.clistboxCommodities.MultiColumn = true;
+            this.clistboxCommodities.Location = new System.Drawing.Point(124, 44);
             this.clistboxCommodities.Name = "clistboxCommodities";
             this.clistboxCommodities.Size = new System.Drawing.Size(239, 34);
             this.clistboxCommodities.TabIndex = 10;
-            this.clistboxCommodities.SelectedIndexChanged += new System.EventHandler(this.checkedListBox1_SelectedIndexChanged);
+            // 
+            // clistboxScopes
+            // 
+            this.clistboxScopes.CheckOnClick = true;
+            this.clistboxScopes.FormattingEnabled = true;
+            this.clistboxScopes.Location = new System.Drawing.Point(124, 5);
+            this.clistboxScopes.Name = "clistboxScopes";
+            this.clistboxScopes.Size = new System.Drawing.Size(239, 34);
+            this.clistboxScopes.TabIndex = 11;
+            this.clistboxScopes.ItemCheck += new System.Windows.Forms.ItemCheckEventHandler(this.clistboxScopes_ItemCheck);
+            this.clistboxScopes.SelectedIndexChanged += new System.EventHandler(this.clistboxScopes_SelectedIndexChanged);
+            // 
+            // lblscope
+            // 
+            this.lblscope.AutoSize = true;
+            this.lblscope.Location = new System.Drawing.Point(5, 14);
+            this.lblscope.Name = "lblscope";
+            this.lblscope.Size = new System.Drawing.Size(93, 13);
+            this.lblscope.TabIndex = 12;
+            this.lblscope.Text = "Select the scope :";
             // 
             // FrmSPRSynchronizationUtility
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(371, 112);
+            this.ClientSize = new System.Drawing.Size(368, 141);
+            this.Controls.Add(this.lblscope);
+            this.Controls.Add(this.clistboxScopes);
             this.Controls.Add(this.clistboxCommodities);
             this.Controls.Add(this.lblStatus);
             this.Controls.Add(this.lblStatusName);
@@ -179,6 +201,8 @@
         private System.Windows.Forms.Label lblStatusName;
         private System.Windows.Forms.Label lblStatus;
         private System.Windows.Forms.CheckedListBox clistboxCommodities;
+        private System.Windows.Forms.CheckedListBox clistboxScopes;
+        private System.Windows.Forms.Label lblscope;
     }
 }
 

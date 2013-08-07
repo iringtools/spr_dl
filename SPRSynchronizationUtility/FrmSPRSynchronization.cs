@@ -8,6 +8,7 @@ using System.Text;
 using System.Windows.Forms;
 using Bechtel.iRING.SPRUtility;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace Bechtel.iRING.SPRUtility
 {
@@ -26,7 +27,7 @@ namespace Bechtel.iRING.SPRUtility
                 logFile = File.AppendText("Log.txt");
 
             logFile.WriteLine("Start Time:" + DateTime.Now);
-            syncUtility = new SPRSynchronizationUtility(logFile);
+            //syncUtility = new SPRSynchronizationUtility(logFile);
         }
 
         private void btnCancel_Click(object sender, EventArgs e)
@@ -39,6 +40,15 @@ namespace Bechtel.iRING.SPRUtility
         {
             try
             {
+                btnGo.Enabled = false;
+                Application.DoEvents();
+
+                if (clistboxScopes.CheckedItems.Count == 0)
+                {
+                    MessageBox.Show("Please select the sccope.");
+                    return;
+                }
+
                 if (string.IsNullOrEmpty(txtMdbName.Text))
                 {
                     MessageBox.Show("Please select the Mdb File.");
@@ -55,6 +65,9 @@ namespace Bechtel.iRING.SPRUtility
                     Application.DoEvents();
 
                     syncUtility.MDBSynchronization(lstitems);
+                    //Task task = new Task(new Action(() => ProcessSync(lstitems)));
+                    //task.Start();
+                    //task.Wait();
 
                     lblStatus.Text = "Completed";
                     Application.DoEvents();
@@ -84,12 +97,41 @@ namespace Bechtel.iRING.SPRUtility
             }
             finally
             {
-
+                btnGo.Enabled = true;
+                Application.DoEvents();
             }
         }
 
+        private void ProcessSync(List<string> lstitems)
+        {
+            syncUtility.MDBSynchronization(lstitems);
+        }
+
+
         private void FrmSPRSynchronizationUtility_Load(object sender, EventArgs e)
         {
+            //Load all the scopes based on no. of configuration files present in app data folder.
+            string appDataPath = @".\App_Data\";
+            string _baseDirectory = Directory.GetCurrentDirectory();
+            _baseDirectory = _baseDirectory.Substring(0, _baseDirectory.LastIndexOf("\\bin"));
+
+            string _dataPath = Path.Combine(_baseDirectory, appDataPath);
+            DirectoryInfo appDataDir = new DirectoryInfo(_dataPath);
+            string filterFilePattern = String.Format("Configuration.*.xml");
+            FileInfo[] filterFiles = appDataDir.GetFiles(filterFilePattern);
+
+            foreach (FileInfo file in filterFiles)
+            {
+                string fileName = Path.GetFileNameWithoutExtension(file.Name);
+                string scopeName = fileName.Substring(fileName.IndexOf('.') + 1);
+                clistboxScopes.Items.Add(scopeName); 
+            }
+
+            /*
+            // Based on the Scope selected, Laod all the objects from the corresponding dictionary.
+            syncUtility = new SPRSynchronizationUtility(logFile);
+
+            //Loading objects on which we have to operate.
             List<org.iringtools.library.DataObject> objects = syncUtility.GetObjects();
 
             clistboxCommodities.Items.Clear();
@@ -101,13 +143,7 @@ namespace Bechtel.iRING.SPRUtility
             {
                 clistboxCommodities.SetItemChecked(i, true);
             }
-
-            //cboxCommodities.Items.Clear();
-            //cboxCommodities.Items.Add(string.Empty);
-            //cboxCommodities.DataSource = objects;
-
-            //cboxCommodities.DisplayMember = "objectName";
-            //cboxCommodities.ValueMember = "objectName";
+             * */
         }
 
         private void btnBrowse_Click(object sender, EventArgs e)
@@ -143,9 +179,42 @@ namespace Bechtel.iRING.SPRUtility
             }
         }
 
-        private void checkedListBox1_SelectedIndexChanged(object sender, EventArgs e)
-        {
 
+        private void clistboxScopes_ItemCheck(object sender, ItemCheckEventArgs e)
+        {
+            for (int ix = 0; ix < clistboxScopes.Items.Count; ++ix)
+            {
+                if (ix != e.Index)
+                {
+                    clistboxScopes.SetItemChecked(ix, false);
+                }
+            }
+        }
+
+        private void clistboxScopes_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            foreach (object scopeChecked in clistboxScopes.CheckedItems)
+            {
+                // Based on the Scope selected, do all the settings.
+                syncUtility = new SPRSynchronizationUtility(logFile,Convert.ToString(scopeChecked));
+
+                // Load all the objects from the corresponding dictionary.
+                List<org.iringtools.library.DataObject> objects = syncUtility.GetObjects();
+
+                clistboxCommodities.Items.Clear();
+                foreach (org.iringtools.library.DataObject obj in objects)
+                {
+                    clistboxCommodities.Items.Add(obj.objectName);
+                }
+                for (int i = 0; i < clistboxCommodities.Items.Count; i++)
+                {
+                    clistboxCommodities.SetItemChecked(i, true);
+                }
+            }
+            if (clistboxScopes.CheckedItems.Count == 0)
+            {
+                clistboxCommodities.Items.Clear();
+            }
         }
     }
 }

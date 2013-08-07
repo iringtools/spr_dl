@@ -52,8 +52,6 @@ namespace Bechtel.iRING.SPR
             _appConfigXML = String.Format("{0}{1}.{2}.config", _xmlPath, _projectName, _applicationName);
             _sprSettings = new StaticDust.Configuration.AppSettingsReader(_appConfigXML);
 
-            //_appConfigXML = String.Format("{0}{1}.{2}.config", _xmlPath, _projectName, _applicationName);
-            //_sprSettings = new StaticDust.Configuration.AppSettingsReader(_appConfigXML);
             _dbConnectionString = EncryptionUtility.Decrypt(_sprSettings["dbconnection"].ToString());
         }
 
@@ -428,7 +426,8 @@ namespace Bechtel.iRING.SPR
                 _objectType = lstObjects.First().objectName;
                 // Loading the filter.xml file.
                 dsFilter = new DataSet("dataFilter");
-                string filterPath = String.Format("{0}{1}{2}.xml", _baseDirectory, _xmlPath, "Filter");
+                string fileName = string.Format("Filter.{0}.{1}", _projectName, _applicationName);
+                string filterPath = String.Format("{0}{1}{2}.xml", _baseDirectory, _xmlPath, fileName);
                 dsFilter.ReadXml(filterPath);
 
                 // Updating SQL
@@ -556,6 +555,14 @@ namespace Bechtel.iRING.SPR
         /// </summary>
         private void UpdateLabelValues(Dictionary<int, DataProperty> lstproperties, string tableName)
         {
+            var lstObjects = (from dobjects in _dataDictionary.dataObjects
+                              where dobjects.objectName == _objectType
+                              select dobjects).ToList();
+
+            string keyColumnName = (from dProperties in lstObjects[0].dataProperties
+                                    where dProperties.propertyName == lstObjects[0].keyProperties.FirstOrDefault().keyPropertyName
+                                    select dProperties.columnName).First();
+
             foreach (KeyValuePair<int, DataProperty> keyVal in lstproperties)
             {
                 // This procedure will update the value for new property on the linkages associated with the tag.  
@@ -565,6 +572,7 @@ namespace Bechtel.iRING.SPR
                 comm.Parameters.Add(new SqlParameter("labelNameIndex", keyVal.Key));
                 comm.Parameters.Add(new SqlParameter("labelName", keyVal.Value.columnName));
                 comm.Parameters.Add(new SqlParameter("TableName", tableName));
+                comm.Parameters.Add(new SqlParameter("keyColumnName", keyColumnName));
                 comm.CommandTimeout = 1000000;
                 comm.ExecuteNonQuery();
             }
@@ -1514,7 +1522,7 @@ namespace Bechtel.iRING.SPR
 
                 //Check if the object is specified in the filter, get the labelname appropriately.
                 DataRow row = (from DataRow dr in dsFilter.Tables[0].Rows
-                               where (string)dr["objectName"] == _objectType
+                               where ((string)dr["objectName"]).ToLower() == _objectType.ToLower()
                                select dr).FirstOrDefault();
                 if (row != null)
                 {
@@ -1672,41 +1680,52 @@ namespace Bechtel.iRING.SPR
                     datatable.Rows.Add(_row);
                 }
 
-                DataRow row = (from DataRow dr in dsFilter.Tables[0].Rows
-                          where (string)dr["objectName"] == _objectType
-                          select dr).FirstOrDefault();
+                var rows = (from DataRow dr in dsFilter.Tables[0].Rows
+                          where ((string)dr["objectName"]).ToLower() == _objectType.ToLower()
+                          select dr);
 
                 string parentCursorForSP = string.Empty;
                 StringBuilder sqlExpression = new StringBuilder();
-                if (row != null) // Assuming that the filter would contain only the relational operators, not the logical one.
+
+                if (rows.Count<DataRow>() > 0 ) 
                 {
-                    string relationalOperator = row["relationalOperator"].ToString();
-                    string value = row["value"].ToString();
-                    if (relationalOperator.ToLower() == "startswith")
+                    foreach (DataRow row in rows)
                     {
-                        sqlExpression.Append(" LIKE '" + value.Replace("'", "''") + "%'");
-                    }
-                    else if (relationalOperator.ToLower() == "endswith")
-                    {
-                        sqlExpression.Append(" LIKE '%" + value.Replace("'", "''") + "'");
-                    }
-                    else if (relationalOperator.ToLower() == "contains")
-                    {
-                        sqlExpression.Append(" LIKE '%" + value.Replace("'", "''") + "%'");
-                    }
-                    else if (relationalOperator.ToLower() == "equalto")
-                    {
-                        sqlExpression.Append("='" + value.Replace("'", "''") + "'");
-                    }
-                    else if (relationalOperator.ToLower() == "notequalto")
-                    {
-                        sqlExpression.Append("<>'" + value.Replace("'", "''") + "'");
+                        if (row.Table.Columns.Contains("logicalOperator"))
+                        {
+                            string logicalOperator = row["logicalOperator"].ToString();
+                            sqlExpression.Append(" " + logicalOperator);
+                        }
+                        sqlExpression.Append(" lv.label_value ");
+
+                        string relationalOperator = row["relationalOperator"].ToString();
+                        string value = row["value"].ToString();
+                        if (relationalOperator.ToLower() == "startswith")
+                        {
+                            sqlExpression.Append(" LIKE '" + value.Replace("'", "''") + "%'");
+                        }
+                        else if (relationalOperator.ToLower() == "endswith")
+                        {
+                            sqlExpression.Append(" LIKE '%" + value.Replace("'", "''") + "'");
+                        }
+                        else if (relationalOperator.ToLower() == "contains")
+                        {
+                            sqlExpression.Append(" LIKE '%" + value.Replace("'", "''") + "%'");
+                        }
+                        else if (relationalOperator.ToLower() == "equalto")
+                        {
+                            sqlExpression.Append("='" + value.Replace("'", "''") + "'");
+                        }
+                        else if (relationalOperator.ToLower() == "notequalto")
+                        {
+                            sqlExpression.Append("<>'" + value.Replace("'", "''") + "'");
+                        }
                     }
 
                     parentCursorForSP = "DECLARE Linkage_Index CURSOR FOR" +
-                                        " (select linkage_index,(select ISNULL(Max(label_line_number),0)+1 from labels where linkage_index= A.linkage_index)" +
+                                        " (select distinct linkage_index,(select ISNULL(Max(label_line_number),0)+1 from labels where linkage_index= A.linkage_index)" +
                                         " as labelNo from labels A join label_values lv on lv.label_value_index = A.label_value_index" +
-                                        " where label_name_index = " + Key_Index + " and  lv.label_value " + sqlExpression + ") order by linkage_index";
+                                        " where label_name_index = " + Key_Index + " and  " + sqlExpression + ") order by linkage_index";
 
                 }
                 else
