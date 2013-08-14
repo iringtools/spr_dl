@@ -40,6 +40,7 @@ namespace Bechtel.iRING.SPR
         private string _objectType = string.Empty;
         private StreamWriter _logFile = null;
         private DataSet dsFilter = null;
+        public static string uId;
 
         public SPRDataLayer(AdapterSettings settings)
             : base(settings)
@@ -573,7 +574,8 @@ namespace Bechtel.iRING.SPR
                 comm.Parameters.Add(new SqlParameter("labelName", keyVal.Value.columnName));
                 comm.Parameters.Add(new SqlParameter("TableName", tableName));
                 comm.Parameters.Add(new SqlParameter("keyColumnName", keyColumnName));
-                comm.CommandTimeout = 1000000;
+                comm.Parameters.Add(new SqlParameter("guid", uId));
+                comm.CommandTimeout = 5000000;
                 comm.ExecuteNonQuery();
             }
         }
@@ -950,6 +952,7 @@ namespace Bechtel.iRING.SPR
             string status = string.Empty;
             try
             {
+                uId = System.Guid.NewGuid().ToString("N");
                 ConnectToAccess();
 
                 DataTable dataTable = _connOledb.GetOleDbSchemaTable(OleDbSchemaGuid.Tables, new object[] { null, null, null, "TABLE" });
@@ -1063,28 +1066,28 @@ namespace Bechtel.iRING.SPR
                         sqlcomm.ExecuteNonQuery();
 
                         // Second, Creating the table in the cache.
-                        sqlcomm.CommandText = "CREATE TABLE [dbo].[" + strSheetTableName + "] (" + vInheritColumns + ")";
+                        sqlcomm.CommandText = "CREATE TABLE [dbo].[" + strSheetTableName + "_" + uId + "] (" + vInheritColumns + ")";
                         sqlcomm.ExecuteNonQuery();
 
                         if (strSheetTableName == "labels")
                         {
-                            sqlcomm.CommandText = SqlConstant.IndexOn_tblLabels;
+                            sqlcomm.CommandText = string.Format(SqlConstant.IndexOn_tblLabels,uId);
                             sqlcomm.ExecuteNonQuery();
                         }
 
                         if (strSheetTableName == "label_values")
                         {
 
-                            sqlcomm.CommandText = string.Format(SqlConstant.ifPrimaryKey, strSheetTableName);
+                            sqlcomm.CommandText = string.Format(SqlConstant.ifPrimaryKey, strSheetTableName+"_"+uId);
                             string primaryKey = Convert.ToString(sqlcomm.ExecuteScalar());
 
                             if (!string.IsNullOrEmpty(primaryKey))
                             {
-                                sqlcomm.CommandText = string.Format(SqlConstant.dropPrimaryKey, strSheetTableName, primaryKey);
+                                sqlcomm.CommandText = string.Format(SqlConstant.dropPrimaryKey, strSheetTableName+"_"+uId, primaryKey);
                                 sqlcomm.ExecuteNonQuery();
                             }
 
-                            sqlcomm.CommandText = SqlConstant.IndexOn_tblLabel_Values;
+                            sqlcomm.CommandText = string.Format(SqlConstant.IndexOn_tblLabel_Values,uId);
                             sqlcomm.ExecuteNonQuery();
                         }
 
@@ -1098,7 +1101,7 @@ namespace Bechtel.iRING.SPR
                         using (SqlBulkCopy bulkCopy = new SqlBulkCopy(_conn))
                         {
                             bulkCopy.BulkCopyTimeout = 600;
-                            bulkCopy.DestinationTableName = "dbo." + strSheetTableName;
+                            bulkCopy.DestinationTableName = "dbo." + strSheetTableName + "_" + uId;
                             try
                             {
                                 bulkCopy.WriteToServer(tAccess);
@@ -1277,7 +1280,7 @@ namespace Bechtel.iRING.SPR
                 string connSqlImport = "ODBC;Description=SqlToMdb;DRIVER=SQL Server;SERVER={0};Database={1};Uid={2};Pwd={3}";
                 connSqlImport = string.Format(connSqlImport, server, db, user, pwd);
                 //q = "Insert INTO labels (linkage_index,label_name_index,label_value_index,label_line_number,extended_label) select linkage_index,label_name_index,label_value_index,label_line_number,extended_label FROM [ODBC;Description=Test;DRIVER=SQL Server;SERVER=Ashs91077\\iring;Database=SPR;User Id=SPR;Password=SPR].labels";
-                q = "Insert INTO labels (linkage_index,label_name_index,label_value_index,label_line_number,extended_label) select linkage_index,label_name_index,label_value_index,label_line_number,extended_label FROM ["+connSqlImport+"].labels";
+                q = "Insert INTO labels (linkage_index,label_name_index,label_value_index,label_line_number,extended_label) select linkage_index,label_name_index,label_value_index,label_line_number,extended_label FROM ["+connSqlImport+"].labels_" + uId;
                 commandee = new OleDbCommand();
                 commandee.Connection = _connOledb;
                 commandee.CommandText = q;
@@ -1288,7 +1291,7 @@ namespace Bechtel.iRING.SPR
 
 
                 // update label values table too.
-                q = "Insert INTO label_values (label_value_index,label_value,label_value_numeric) select label_value_index,label_value,label_value_numeric FROM [" + connSqlImport + "].label_values";
+                q = "Insert INTO label_values (label_value_index,label_value,label_value_numeric) select label_value_index,label_value,label_value_numeric FROM [" + connSqlImport + "].label_values_" + uId;
                 commandee = new OleDbCommand();
                 commandee.Connection = _connOledb;
                 commandee.CommandText = q;
@@ -1298,6 +1301,7 @@ namespace Bechtel.iRING.SPR
                 _logFile.WriteLine("Copied label_values with row count: " + rcount + " from SQL to Mdb at : " + DateTime.Now);
                 //---- Bulk Update Labels - Completed.
 
+                DropSQLCacheTables();  // Dropping the Cache tables.
                 status = "success";
             }
             catch (Exception ex)
@@ -1530,7 +1534,8 @@ namespace Bechtel.iRING.SPR
                 }
 
                 ConnectToSqL();
-                string InitialQuery = "select label_name_index from label_names	where label_name = '" + _labelname +"'";
+                string mdbQuery = string.Empty;
+                string InitialQuery = "select label_name_index from label_names_"+ uId + " where label_name = '" + _labelname +"'";
 
                 SqlCommand comm = new SqlCommand(InitialQuery, _conn);
                 SqlDataReader reader = comm.ExecuteReader();
@@ -1548,7 +1553,7 @@ namespace Bechtel.iRING.SPR
                 if (lblNameIndex != 0)
                 {
                     //make properties
-                    InitialQuery = "select ISNULL(MAX(label_name_index),0)+1 FROM label_names";
+                    InitialQuery = "select ISNULL(MAX(label_name_index),0)+1 FROM label_names_" + uId;
                     comm = new SqlCommand(InitialQuery, _conn);
                     int iLastlabel_nameCount = (Int32)comm.ExecuteScalar();
 
@@ -1563,32 +1568,34 @@ namespace Bechtel.iRING.SPR
                     // Getting all Label(e.g. spool) Properties.
                     foreach (var property in list)
                     {
-                        InitialQuery = "select count(*) FROM label_names where label_name = '" + property.propertyName+"'";
+                        InitialQuery = "select count(*) FROM label_names_" + uId +" where label_name = '" + property.propertyName+"'";
                         comm = new SqlCommand(InitialQuery, _conn);
                         int count = (Int32)comm.ExecuteScalar();
 
                         // If Property not found, Plz insert it in label_names table.
                         if (count == 0)
                         {
-                            InitialQuery = "SELECT COUNT(*) FROM information_schema.columns WHERE table_name = 'label_names' and COLUMN_NAME = 'label_status'";
+                            InitialQuery = "SELECT COUNT(*) FROM information_schema.columns WHERE table_name = 'label_names_" + uId + "' and COLUMN_NAME = 'label_status'";
                             comm = new SqlCommand(InitialQuery, _conn);
                             count = (Int32)comm.ExecuteScalar();
 
                             //Columns in table - label_names varies so insert accordingly.
                             if (count == 1)
                             {
-                                InitialQuery = "Insert into label_names (label_name_index,label_name,label_status) values ( " + iLastlabel_nameCount + ", '" + property.propertyName + "', " + 1 + ")";
+                                InitialQuery = "Insert into label_names_"+ uId +" (label_name_index,label_name,label_status) values ( " + iLastlabel_nameCount + ", '" + property.propertyName + "', " + 1 + ")";
+                                mdbQuery = "Insert into label_names (label_name_index,label_name,label_status) values ( " + iLastlabel_nameCount + ", '" + property.propertyName + "', " + 1 + ")";
                             }
                             else
                             {
-                                InitialQuery = "Insert into label_names (label_name_index,label_name) values ( " + iLastlabel_nameCount + ", '" + property.propertyName + "' )";
+                                InitialQuery = "Insert into label_names_" + uId + " (label_name_index,label_name) values ( " + iLastlabel_nameCount + ", '" + property.propertyName + "' )";
+                                mdbQuery = "Insert into label_names (label_name_index,label_name) values ( " + iLastlabel_nameCount + ", '" + property.propertyName + "' )";
                             }
                             comm = new SqlCommand(InitialQuery, _conn);
                             comm.ExecuteNonQuery();
 
                             // Insert into mbd simultaneously  - START
                             ConnectToAccess();
-                            OleDbCommand cmmdOledb = new OleDbCommand(InitialQuery, _connOledb);
+                            OleDbCommand cmmdOledb = new OleDbCommand(mdbQuery, _connOledb);
                             cmmdOledb.ExecuteNonQuery();
                             // Insert into mbd simultaneously  - END
 
@@ -1601,7 +1608,7 @@ namespace Bechtel.iRING.SPR
                         {
                             if (_labelname != property.propertyName && !keyPropList.Contains(property.propertyName))
                             {
-                                InitialQuery = "select label_name_index from label_names where label_name = '" + property.propertyName + "'";
+                                InitialQuery = "select label_name_index from label_names_" + uId + " where label_name = '" + property.propertyName + "'";
                                 comm = new SqlCommand(InitialQuery, _conn);
                                 int label_name_index = (Int32)comm.ExecuteScalar();
 
@@ -1723,16 +1730,16 @@ namespace Bechtel.iRING.SPR
                     }
 
                     parentCursorForSP = "DECLARE Linkage_Index CURSOR FOR" +
-                                        " (select distinct linkage_index,(select ISNULL(Max(label_line_number),0)+1 from labels where linkage_index= A.linkage_index)" +
-                                        " as labelNo from labels A join label_values lv on lv.label_value_index = A.label_value_index" +
+                                        " (select distinct linkage_index,(select ISNULL(Max(label_line_number),0)+1 from labels_"+ uId +" where linkage_index= A.linkage_index)" +
+                                        " as labelNo from labels_"+ uId +" A join label_values_"+ uId +" lv on lv.label_value_index = A.label_value_index" +
                                         " where label_name_index = " + Key_Index + " and  " + sqlExpression + ") order by linkage_index";
 
                 }
                 else
                 {
                     parentCursorForSP = "DECLARE Linkage_Index CURSOR FOR" +
-                                         " (select linkage_index,(select ISNULL(Max(label_line_number),0)+1 from labels where linkage_index= A.linkage_index)" +
-                                         " as labelNo from labels A where label_name_index = " + Key_Index + " )order by linkage_index";
+                                         " (select linkage_index,(select ISNULL(Max(label_line_number),0)+1 from labels_" + uId + " where linkage_index= A.linkage_index)" +
+                                         " as labelNo from labels_" + uId + " A where label_name_index = " + Key_Index + " )order by linkage_index";
                 }
                 //--------------------------------
 
@@ -1743,10 +1750,11 @@ namespace Bechtel.iRING.SPR
                     comm.CommandType = CommandType.StoredProcedure;
                     comm.Parameters.Add(new SqlParameter("SpoolIndex", Key_Index));
                     comm.Parameters.Add(new SqlParameter("parentCursor", parentCursorForSP));
+                    comm.Parameters.Add(new SqlParameter("guid", uId));
                     comm.Parameters.Add(new SqlParameter("tblLabelIndexes", datatable));
                     comm.CommandTimeout = 10000;
                     comm.ExecuteNonQuery();
-                    _logFile.WriteLine("New labels are added on all linkages with null values");
+                    _logFile.WriteLine("New labels are added on all linkages with null values at : " + DateTime.Now);
                 }
                 //No Else Case required - As per the discussion with darius we need not to put null on all linkages of that object 
                 //simply override the values coming from proxy, old should remain there.***Dated : 27.06.13***
@@ -1786,6 +1794,26 @@ namespace Bechtel.iRING.SPR
         public void EnableLogging(StreamWriter logFile)
         {
             _logFile = logFile;
+        }
+
+        private void DropSQLCacheTables()
+        {
+            try
+            {
+                ConnectToSqL();
+                SqlCommand comm = new SqlCommand("DROP_CacheTables", _conn);
+                comm.CommandType = CommandType.StoredProcedure;
+
+                comm.Parameters.Add(new SqlParameter("guid", uId));
+                comm.CommandTimeout = 1000000;
+                comm.ExecuteNonQuery();
+                _logFile.WriteLine("SQL Cache Tables dropped at : " + DateTime.Now);
+            }
+            catch (Exception ex)
+            {
+                _logFile.WriteLine("Exception in dropping SQL Cache Tables : " + ex.Message);
+                logger.Info(ex.Message);
+            }
         }
     }
 }

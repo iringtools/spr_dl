@@ -13,9 +13,9 @@ namespace Bechtel.iRING.SPR
 
         public const string Get_tableName = "SELECT TABLE_NAME FROM information_schema.tables";
 
-        public const string IndexOn_tblLabels = "CREATE CLUSTERED INDEX SPRindex ON dbo.labels (linkage_index)";
+        public const string IndexOn_tblLabels = "CREATE CLUSTERED INDEX SPRindex ON dbo.labels_{0} (linkage_index)";
 
-        public const string IndexOn_tblLabel_Values = "CREATE CLUSTERED INDEX SPRLabelValueindex ON dbo.label_values (label_value_index)";
+        public const string IndexOn_tblLabel_Values = "CREATE CLUSTERED INDEX SPRLabelValueindex ON dbo.label_values_{0} (label_value_index)";
 
         public const string MDBProvider = "Microsoft.Jet.OLEDB.4.0";
 

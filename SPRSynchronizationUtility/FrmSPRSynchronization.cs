@@ -16,6 +16,8 @@ namespace Bechtel.iRING.SPRUtility
     {
         SPRSynchronizationUtility syncUtility = null;
         StreamWriter logFile = null;
+        string _baseDirectory;
+        string _dataPath;
 
         public FrmSPRSynchronizationUtility()
         {
@@ -32,6 +34,7 @@ namespace Bechtel.iRING.SPRUtility
 
         private void btnCancel_Click(object sender, EventArgs e)
         {
+            logFile.WriteLine("Request Cancelled.");
             SaveLoggingFile();
             this.Close();
         }
@@ -45,7 +48,7 @@ namespace Bechtel.iRING.SPRUtility
 
                 if (clistboxScopes.CheckedItems.Count == 0)
                 {
-                    MessageBox.Show("Please select the sccope.");
+                    MessageBox.Show("Please select the scope.");
                     return;
                 }
 
@@ -110,20 +113,21 @@ namespace Bechtel.iRING.SPRUtility
 
         private void FrmSPRSynchronizationUtility_Load(object sender, EventArgs e)
         {
-            //Load all the scopes based on no. of configuration files present in app data folder.
+            //Load all the scopes based on no. of *.SPRUtil.config files present in app data folder.
             string appDataPath = @".\App_Data\";
-            string _baseDirectory = Directory.GetCurrentDirectory();
+            _baseDirectory = Directory.GetCurrentDirectory();
+            if (_baseDirectory.Contains("\\bin"))
             _baseDirectory = _baseDirectory.Substring(0, _baseDirectory.LastIndexOf("\\bin"));
 
-            string _dataPath = Path.Combine(_baseDirectory, appDataPath);
+            _dataPath = Path.Combine(_baseDirectory, appDataPath);
             DirectoryInfo appDataDir = new DirectoryInfo(_dataPath);
-            string filterFilePattern = String.Format("Configuration.*.xml");
+            string filterFilePattern = String.Format("*.SPRUtil.config");
             FileInfo[] filterFiles = appDataDir.GetFiles(filterFilePattern);
 
             foreach (FileInfo file in filterFiles)
             {
                 string fileName = Path.GetFileNameWithoutExtension(file.Name);
-                string scopeName = fileName.Substring(fileName.IndexOf('.') + 1);
+                string scopeName = fileName.Substring(0, fileName.IndexOf('.'));
                 clistboxScopes.Items.Add(scopeName); 
             }
 
@@ -148,24 +152,31 @@ namespace Bechtel.iRING.SPRUtility
 
         private void btnBrowse_Click(object sender, EventArgs e)
         {
-            string InitialbasePath = Directory.GetCurrentDirectory();
-            string CurrentbasePath = string.Empty;
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            if (syncUtility != null)
             {
-                CurrentbasePath = Directory.GetCurrentDirectory();
-                string fileToOpen = openFileDialog.FileName;
-                string fileExtension = fileToOpen.Substring(fileToOpen.LastIndexOf('.') + 1);
-                if (fileExtension.ToUpper() != "MDB2")
+                string InitialbasePath = Directory.GetCurrentDirectory();
+                string CurrentbasePath = string.Empty;
+                if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 {
-                    MessageBox.Show("Please select the file with Mdb2 extension");
-                    return;
+                    CurrentbasePath = Directory.GetCurrentDirectory();
+                    string fileToOpen = openFileDialog.FileName;
+                    string fileExtension = fileToOpen.Substring(fileToOpen.LastIndexOf('.') + 1);
+                    if (fileExtension.ToUpper() != "MDB2")
+                    {
+                        MessageBox.Show("Please select the file with Mdb2 extension");
+                        return;
+                    }
+                    txtMdbName.Text = fileToOpen;
+                    syncUtility.UpdateMdbFile(fileToOpen);
                 }
-                txtMdbName.Text = fileToOpen;
-                syncUtility.UpdateMdbFile(fileToOpen);
-            }
 
-            if (InitialbasePath != CurrentbasePath)                 // In XP both path would be different.
-                Directory.SetCurrentDirectory(InitialbasePath);
+                if (InitialbasePath != CurrentbasePath)                 // In XP both path would be different.
+                    Directory.SetCurrentDirectory(InitialbasePath);
+            }
+            else
+            {
+                MessageBox.Show("Please select the scope first.");
+            }
         }
 
         private void SaveLoggingFile()
@@ -193,10 +204,37 @@ namespace Bechtel.iRING.SPRUtility
 
         private void clistboxScopes_SelectedIndexChanged(object sender, EventArgs e)
         {
+            string scope =string.Empty, app = string.Empty;
+            // Based on the selected scope, serach for its configuration.  
             foreach (object scopeChecked in clistboxScopes.CheckedItems)
             {
-                // Based on the Scope selected, do all the settings.
-                syncUtility = new SPRSynchronizationUtility(logFile,Convert.ToString(scopeChecked));
+                DirectoryInfo appDataDir = new DirectoryInfo(_dataPath);
+                string filterFilePattern = String.Format("Configuration." + scopeChecked + ".*.xml");
+                FileInfo[] filterFiles = appDataDir.GetFiles(filterFilePattern);
+
+                foreach (FileInfo file in filterFiles)    // Each scope must have only one configuration file.
+                {
+                    string fileName = Path.GetFileNameWithoutExtension(file.Name);
+                    string[] names = fileName.Split('.');
+                    if (names.Length == 3)
+                    {
+                         scope = names[1];
+                         app = names[2];
+                    }
+                    else
+                    {
+                        logFile.WriteLine("Please check the configuration file name : " + fileName);
+                    }
+                    break;
+                }
+
+                if (string.IsNullOrEmpty(scope) || string.IsNullOrEmpty(app))
+                {
+                    logFile.WriteLine("Configuration file Not Found : Configuration.{0}.{1}.xml");
+                    return;
+                }
+                // Based on the Scope and app selected, do all the settings.
+                syncUtility = new SPRSynchronizationUtility(logFile,scope,app);
 
                 // Load all the objects from the corresponding dictionary.
                 List<org.iringtools.library.DataObject> objects = syncUtility.GetObjects();

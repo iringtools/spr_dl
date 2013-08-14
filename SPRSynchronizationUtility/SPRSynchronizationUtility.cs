@@ -16,32 +16,23 @@ namespace Bechtel.iRING.SPRUtility
         private AdapterSettings _adapterSettings;
         private SPRDataLayer _dataLayer;
         StreamWriter _logFile = null;
-        private StaticDust.Configuration.AppSettingsReader _utilitySettings;
 
-        public SPRSynchronizationUtility(StreamWriter logFile, string scopeName)
+        public SPRSynchronizationUtility(StreamWriter logFile, string scope, string app)
         {
             _logFile = logFile;
             _settings = new NameValueCollection();
-           _settings["XmlPath"] = @".\App_Data\";
+            _settings["XmlPath"] = @".\App_Data\";
 
             _baseDirectory = Directory.GetCurrentDirectory();
 
             if (_baseDirectory.Contains("\\bin"))
             {
-                _baseDirectory = _baseDirectory.Substring(0, _baseDirectory.LastIndexOf("\\bin"));  
+                _baseDirectory = _baseDirectory.Substring(0, _baseDirectory.LastIndexOf("\\bin"));
                 Directory.SetCurrentDirectory(_baseDirectory);
             }
             _settings["BaseDirectoryPath"] = _baseDirectory;
-
-            if (scopeName.Contains("."))
-            {
-                _settings["ProjectName"] =  scopeName.Substring(0, scopeName.IndexOf("."));
-                _settings["ApplicationName"] = scopeName.Substring(scopeName.IndexOf(".") + 1 );
-            }
-            //string _appConfigXML = String.Format("{0}utility.config", _settings["XmlPath"]);
-            //_utilitySettings = new StaticDust.Configuration.AppSettingsReader(_appConfigXML);
-            //_settings["ProjectName"] = Convert.ToString(_utilitySettings["ProjectName"]);
-            //_settings["ApplicationName"] = Convert.ToString(_utilitySettings["ApplicationName"]);
+            _settings["ProjectName"] = scope;
+            _settings["ApplicationName"] = app;
 
             _adapterSettings = new AdapterSettings();
             _adapterSettings.AppendSettings(_settings);
@@ -50,7 +41,7 @@ namespace Bechtel.iRING.SPRUtility
                 _settings["ProjectName"],
                 _settings["ApplicationName"]
             );
-           
+
             if (File.Exists(appSettingsPath))
             {
                 AppSettingsReader appSettings = new AppSettingsReader(appSettingsPath);
@@ -70,7 +61,7 @@ namespace Bechtel.iRING.SPRUtility
             try
             {
                 _logFile.WriteLine("Copy the database from Mdb in to SQL.");
-                Response response = _dataLayer.RefreshAll();
+                Response response = _dataLayer.RefreshAll();  // Here I will generate the guid for unique tables.
                 foreach (string objectType in lstCommodities)
                 {
                     _logFile.WriteLine("Processing commodity :-" + objectType + " -Start time : " + DateTime.Now);
