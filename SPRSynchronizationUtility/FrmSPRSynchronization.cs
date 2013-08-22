@@ -254,5 +254,34 @@ namespace Bechtel.iRING.SPRUtility
                 clistboxCommodities.Items.Clear();
             }
         }
+
+        public int InitializeConsoleSPRutility(string projectName, string fileToOpen, string lstComponents)
+        {
+            try
+            {
+                syncUtility = new SPRSynchronizationUtility(logFile, projectName, "SPRUtil");
+                syncUtility.UpdateMdbFile(fileToOpen);
+                List<string> lstitems;
+                if (lstComponents.Contains(','))
+                {
+                    string[] arr = lstComponents.Split(',');
+                    lstitems = new List<string>(arr);
+                }
+                else
+                {
+                    lstitems = new List<string>();
+                    lstitems.Add(lstComponents);
+                }
+
+                syncUtility.MDBSynchronization(lstitems);
+                SaveLoggingFile();
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                logFile.WriteLine("Please check the parameters : " + ex.Message);
+                return 1;
+            }
+        }
     }
 }
