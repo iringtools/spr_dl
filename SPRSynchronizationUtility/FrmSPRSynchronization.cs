@@ -9,6 +9,7 @@ using System.Windows.Forms;
 using Bechtel.iRING.SPRUtility;
 using System.IO;
 using System.Threading.Tasks;
+using System.Reflection;
 
 namespace Bechtel.iRING.SPRUtility
 {
@@ -34,7 +35,8 @@ namespace Bechtel.iRING.SPRUtility
 
         private void btnCancel_Click(object sender, EventArgs e)
         {
-            logFile.WriteLine("Request Cancelled.");
+            if (logFile.BaseStream != null)
+                logFile.WriteLine("Request Cancelled.");
             SaveLoggingFile();
             this.Close();
         }
@@ -114,6 +116,9 @@ namespace Bechtel.iRING.SPRUtility
         private void FrmSPRSynchronizationUtility_Load(object sender, EventArgs e)
         {
             //Load all the scopes based on no. of *.SPRUtil.config files present in app data folder.
+            string verison = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            this.Text = this.Text + " - version " + verison;
+            
             string appDataPath = @".\App_Data\";
             _baseDirectory = Directory.GetCurrentDirectory();
             if (_baseDirectory.Contains("\\bin"))
@@ -185,6 +190,7 @@ namespace Bechtel.iRING.SPRUtility
             {
                 logFile.WriteLine("Log file saved successfully!");
                 logFile.WriteLine("End Time:" + DateTime.Now);
+                logFile.WriteLine("--------------------------------------------");
                 logFile.WriteLine();
                 logFile.Close();
             }

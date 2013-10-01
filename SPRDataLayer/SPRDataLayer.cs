@@ -1619,7 +1619,8 @@ namespace Bechtel.iRING.SPR
                 }
                 else
                 {
-                    throw new Exception("Label " + _labelname + " not found in the label_names");
+                    _logFile.WriteLine("Label :" + _labelname + ": not found in the label_names table");
+                    //throw new Exception("Label " + _labelname + " not found in the label_names");
                 }
                 
             }
@@ -1796,7 +1797,7 @@ namespace Bechtel.iRING.SPR
             _logFile = logFile;
         }
 
-        private void DropSQLCacheTables()
+        public void DropSQLCacheTables()
         {
             try
             {

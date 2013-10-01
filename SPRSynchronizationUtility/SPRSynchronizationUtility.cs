@@ -64,10 +64,10 @@ namespace Bechtel.iRING.SPRUtility
                 Response response = _dataLayer.RefreshAll();  // Here I will generate the guid for unique tables.
                 foreach (string objectType in lstCommodities)
                 {
-                    _logFile.WriteLine("Processing commodity :-" + objectType + " -Start time : " + DateTime.Now);
+                    _logFile.WriteLine("Processing commodity:- " + objectType + " - Start time : " + DateTime.Now);
                     IList<IDataObject> dataObjects = _dataLayer.Get(objectType, new DataFilter(), 0, 0);
                     response = _dataLayer.Post(dataObjects);
-                    _logFile.WriteLine("Processed commodity :-" + objectType + " -End time : " + DateTime.Now);
+                    _logFile.WriteLine("Processed commodity:- " + objectType + " - End time : " + DateTime.Now);
                     _logFile.WriteLine();
                 }
                 _dataLayer.ReverseRefresh();
@@ -75,6 +75,7 @@ namespace Bechtel.iRING.SPRUtility
             }
             catch(Exception ex)
             {
+                _dataLayer.DropSQLCacheTables();  // Dropping the Cache tables even if any exception occur.
                 _logFile.WriteLine(ex.Message + ex.StackTrace);
                 throw ex;
             }
@@ -100,6 +101,9 @@ namespace Bechtel.iRING.SPRUtility
         public void UpdateMdbFile(string fileName)
         {
             _dataLayer.UpdateMdbFileName(fileName);
+            string name = Path.GetFileName(fileName);
+            _logFile.WriteLine("Processing Mdb File:- (" + name + ") at " + DateTime.Now);
+            _logFile.WriteLine();
         }
     }
 }
