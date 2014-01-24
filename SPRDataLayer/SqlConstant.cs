@@ -15,7 +15,11 @@ namespace Bechtel.iRING.SPR
 
         public const string IndexOn_tblLabels = "CREATE CLUSTERED INDEX SPRindex ON dbo.labels_{0} (linkage_index)";
 
+        public const string NonClIndexOn_tblLabels = "CREATE NONCLUSTERED INDEX LinkageNonCindex ON dbo.labels_{0} (label_value_index)";
+
         public const string IndexOn_tblLabel_Values = "CREATE CLUSTERED INDEX SPRLabelValueindex ON dbo.label_values_{0} (label_value_index)";
+
+        public const string NonClIndexOn_tblLabel_Values = "CREATE NONCLUSTERED INDEX LabelValueNonCindex ON dbo.label_values_{0} (label_value)";
 
         public const string MDBProvider = "Microsoft.Jet.OLEDB.4.0";
 

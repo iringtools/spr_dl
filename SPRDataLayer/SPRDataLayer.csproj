@@ -38,8 +38,7 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="iRINGLibrary, Version=2.4.0.5309, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="iRINGLibrary">
       <HintPath>..\lib\iring-tools\iRINGLibrary.dll</HintPath>
     </Reference>
     <Reference Include="log4net, Version=1.2.10.0, Culture=neutral, PublicKeyToken=1b44e1d426115821, processorArchitecture=MSIL">
@@ -60,8 +59,7 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
-    <Reference Include="UtilityLibrary, Version=3.0.0.4264, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="UtilityLibrary">
       <HintPath>..\lib\iring-tools\UtilityLibrary.dll</HintPath>
     </Reference>
   </ItemGroup>

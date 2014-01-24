@@ -564,20 +564,29 @@ namespace Bechtel.iRING.SPR
                                     where dProperties.propertyName == lstObjects[0].keyProperties.FirstOrDefault().keyPropertyName
                                     select dProperties.columnName).First();
 
+            DataTable datatable = new DataTable();
+            datatable.Columns.Add("labelIndex");
+            datatable.Columns.Add("lblName");
+
             foreach (KeyValuePair<int, DataProperty> keyVal in lstproperties)
             {
-                // This procedure will update the value for new property on the linkages associated with the tag.  
-                SqlCommand comm = new SqlCommand("UPDATE_LabelValues", _conn);
-                comm.CommandType = CommandType.StoredProcedure;
-
-                comm.Parameters.Add(new SqlParameter("labelNameIndex", keyVal.Key));
-                comm.Parameters.Add(new SqlParameter("labelName", keyVal.Value.columnName));
-                comm.Parameters.Add(new SqlParameter("TableName", tableName));
-                comm.Parameters.Add(new SqlParameter("keyColumnName", keyColumnName));
-                comm.Parameters.Add(new SqlParameter("guid", uId));
-                comm.CommandTimeout = 5000000;
-                comm.ExecuteNonQuery();
+                DataRow _row = datatable.NewRow();
+                _row["labelIndex"] = keyVal.Key;
+                _row["lblName"] = keyVal.Value.columnName;
+                datatable.Rows.Add(_row);
             }
+            // This procedure will update the value for new property on the linkages associated with the tag.  
+            SqlCommand comm = new SqlCommand("UPDATE_LabelValues", _conn);
+            comm.CommandType = CommandType.StoredProcedure;
+
+            //comm.Parameters.Add(new SqlParameter("labelNameIndex", keyVal.Key));
+            //comm.Parameters.Add(new SqlParameter("labelName", keyVal.Value.columnName));
+            comm.Parameters.Add(new SqlParameter("LabelIndexAndName", datatable));
+            comm.Parameters.Add(new SqlParameter("TableName", tableName));
+            comm.Parameters.Add(new SqlParameter("keyColumnName", keyColumnName));
+            comm.Parameters.Add(new SqlParameter("guid", uId));
+            comm.CommandTimeout = 5000000;
+            comm.ExecuteNonQuery();
         }
 
 
@@ -1045,10 +1054,22 @@ namespace Bechtel.iRING.SPR
                             sKeys += key + ",";
                         }
 
+                        //if (strSheetTableName == "label_values")
+                        //{
+                        //    sKeys = "PRIMARY KEY ( label_value )";
+                        //    sb.Append(sKeys);
+                        //    vInheritColumns = sb.ToString();
+                        //}
+                        if (strSheetTableName == "labels" && string.IsNullOrEmpty(sKeys))
+                        {
+                            sb.Append("PRIMARY KEY (linkage_index,label_name_index),");
+                            vInheritColumns = sb.ToString();
+                        }
+
                         if (!string.IsNullOrEmpty(sKeys))
                         {
                             sKeys = sKeys.Substring(0, sKeys.LastIndexOf(','));
-                            sKeys = "PRIMARY KEY (" + sKeys + " )";
+                            sKeys = "PRIMARY KEY (" + sKeys + " ) ";
                             sb.Append(sKeys);
                             vInheritColumns = sb.ToString();
                         }
@@ -1071,23 +1092,23 @@ namespace Bechtel.iRING.SPR
 
                         if (strSheetTableName == "labels")
                         {
-                            sqlcomm.CommandText = string.Format(SqlConstant.IndexOn_tblLabels,uId);
+                            sqlcomm.CommandText = string.Format(SqlConstant.NonClIndexOn_tblLabels, uId);
                             sqlcomm.ExecuteNonQuery();
                         }
 
                         if (strSheetTableName == "label_values")
                         {
 
-                            sqlcomm.CommandText = string.Format(SqlConstant.ifPrimaryKey, strSheetTableName+"_"+uId);
-                            string primaryKey = Convert.ToString(sqlcomm.ExecuteScalar());
+                            //sqlcomm.CommandText = string.Format(SqlConstant.ifPrimaryKey, strSheetTableName+"_"+uId);
+                            //string primaryKey = Convert.ToString(sqlcomm.ExecuteScalar());
 
-                            if (!string.IsNullOrEmpty(primaryKey))
-                            {
-                                sqlcomm.CommandText = string.Format(SqlConstant.dropPrimaryKey, strSheetTableName+"_"+uId, primaryKey);
-                                sqlcomm.ExecuteNonQuery();
-                            }
+                            //if (!string.IsNullOrEmpty(primaryKey))
+                            //{
+                            //    sqlcomm.CommandText = string.Format(SqlConstant.dropPrimaryKey, strSheetTableName+"_"+uId, primaryKey);
+                            //    sqlcomm.ExecuteNonQuery();
+                            //}
 
-                            sqlcomm.CommandText = string.Format(SqlConstant.IndexOn_tblLabel_Values,uId);
+                            sqlcomm.CommandText = string.Format(SqlConstant.NonClIndexOn_tblLabel_Values, uId);
                             sqlcomm.ExecuteNonQuery();
                         }
 
