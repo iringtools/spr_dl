@@ -268,70 +268,82 @@ namespace Bechtel.iRING.SPR
             DataObject dataObject = _dataDictionary.dataObjects.Where<DataObject>(p => p.tableName == tableName).FirstOrDefault();
             keyProperties = (from p in dataObject.keyProperties
                              select p.keyPropertyName).ToList<string>();
-            string tempQry = string.Empty;
-
-            int i = 0;
-            if (keyProperties.Count > 1)
-            {
-                delimiter = dataObject.keyDelimeter;
-                
-                foreach (string prop in keyProperties)
-                {
-                  string keyColumn = (from p in _dataObjectDefinition.dataProperties
-                                      where p.propertyName == prop
-                                      select p.columnName).FirstOrDefault();
-
-                  tempQry += keyColumn + " in (";
-                    foreach (string identifier in identifiers)
-                    {
-                        string[] idArray = null;
-                        if (identifier.Contains(delimiter.FirstOrDefault()))
-                        {
-                            idArray = identifier.Split(delimiter.FirstOrDefault());
-                            ids.Append(separator + "'" + idArray[i] + "'");
-                            separator = ",";
-                        }
-                    }
-                    qry.Append(tempQry + ids + ")");
-                    i++;
-                    if (i < keyProperties.Count)
-                    {
-                        qrySeparator = " and ";
-                    }
-                    else
-                        qrySeparator = "";
-                    tempQry = qry.ToString() + qrySeparator;
-                    ids.Clear();
-                    separator = "";
-                    qry.Clear();
-                }
-            }
-            else
-            {
-              string keyColumn = (from p in _dataObjectDefinition.dataProperties
-                                  where p.propertyName == keyProperties[0] 
-                                  select p.columnName).FirstOrDefault();
-
-                StringBuilder idString = new StringBuilder();
-                string diff = "";
-                foreach (string identifier in identifiers)
-                {
-                    idString.Append(diff + "'" + identifier + "'");
-                    diff = ",";
-
-                }
-                tempQry = keyColumn + " in (" + idString + ")";
-
-            }
+            
             try
             {
-                query = "SELECT * FROM [" + tableName + "] where " + tempQry;
+                query = "SELECT COUNT(*) FROM " + tableName;
                 ConnectToSqL();
+                SqlCommand cmd = new SqlCommand(query, _conn);
+                int rowCount = (int)cmd.ExecuteScalar();
+                
+                if (rowCount == identifiers.Count)
+                {
+                    query = "SELECT * FROM " + tableName;
+                }
+                else
+                {
+                    string tempQry = string.Empty;
+
+                    int i = 0;
+                    if (keyProperties.Count > 1)
+                    {
+                        delimiter = dataObject.keyDelimeter;
+
+                        foreach (string prop in keyProperties)
+                        {
+                            string keyColumn = (from p in _dataObjectDefinition.dataProperties
+                                                where p.propertyName == prop
+                                                select p.columnName).FirstOrDefault();
+
+                            tempQry += keyColumn + " in (";
+                            foreach (string identifier in identifiers)
+                            {
+                                string[] idArray = null;
+                                if (identifier.Contains(delimiter.FirstOrDefault()))
+                                {
+                                    idArray = identifier.Split(delimiter.FirstOrDefault());
+                                    ids.Append(separator + "'" + idArray[i] + "'");
+                                    separator = ",";
+                                }
+                            }
+                            qry.Append(tempQry + ids + ")");
+                            i++;
+                            if (i < keyProperties.Count)
+                            {
+                                qrySeparator = " and ";
+                            }
+                            else
+                                qrySeparator = "";
+                            tempQry = qry.ToString() + qrySeparator;
+                            ids.Clear();
+                            separator = "";
+                            qry.Clear();
+                        }
+                    }
+                    else
+                    {
+                        string keyColumn = (from p in _dataObjectDefinition.dataProperties
+                                            where p.propertyName == keyProperties[0]
+                                            select p.columnName).FirstOrDefault();
+
+                        StringBuilder idString = new StringBuilder();
+                        string diff = "";
+                        foreach (string identifier in identifiers)
+                        {
+                            idString.Append(diff + "'" + identifier + "'");
+                            diff = ",";
+
+                        }
+                        tempQry = keyColumn + " in (" + idString + ")";
+
+                    }
+
+                    query = "SELECT * FROM [" + tableName + "] where " + tempQry;
+                }
+
                 _adapter = new SqlDataAdapter();
                 _adapter.SelectCommand = new SqlCommand(query, _conn);
-
                 _command = new SqlCommandBuilder(_adapter);
-                //_adapter.UpdateCommand = _command.GetUpdateCommand();
                 _adapter.SelectCommand.ExecuteNonQuery();
                 _adapter.Fill(dataSet, tableName);
                 DataTable dataTable = dataSet.Tables[tableName];
@@ -429,7 +441,8 @@ namespace Bechtel.iRING.SPR
                 dsFilter = new DataSet("dataFilter");
                 string fileName = string.Format("Filter.{0}.{1}", _projectName, _applicationName);
                 string filterPath = String.Format("{0}{1}{2}.xml", _baseDirectory, _xmlPath, fileName);
-                dsFilter.ReadXml(filterPath);
+                if (File.Exists(filterPath))
+                    dsFilter.ReadXml(filterPath);
 
                 // Updating SQL
                 ConnectToSqL();
@@ -587,6 +600,7 @@ namespace Bechtel.iRING.SPR
             comm.Parameters.Add(new SqlParameter("guid", uId));
             comm.CommandTimeout = 5000000;
             comm.ExecuteNonQuery();
+            //}
         }
 
 
@@ -1546,9 +1560,14 @@ namespace Bechtel.iRING.SPR
                 _labelname = lstObjects[0].keyProperties.FirstOrDefault().keyPropertyName;
 
                 //Check if the object is specified in the filter, get the labelname appropriately.
-                DataRow row = (from DataRow dr in dsFilter.Tables[0].Rows
-                               where ((string)dr["objectName"]).ToLower() == _objectType.ToLower()
-                               select dr).FirstOrDefault();
+                DataRow row = null;
+                if (dsFilter.Tables.Count > 0)
+                {
+                    row = (from DataRow dr in dsFilter.Tables[0].Rows
+                           where ((string)dr["objectName"]).ToLower() == _objectType.ToLower()
+                           select dr).FirstOrDefault();
+                }
+
                 if (row != null)
                 {
                     _labelname = Convert.ToString(row["propertyName"]);
@@ -1708,61 +1727,74 @@ namespace Bechtel.iRING.SPR
                     _row["labelNameIndexes"] = newLabelIndex;
                     datatable.Rows.Add(_row);
                 }
-
-                var rows = (from DataRow dr in dsFilter.Tables[0].Rows
-                          where ((string)dr["objectName"]).ToLower() == _objectType.ToLower()
-                          select dr);
-
-                string parentCursorForSP = string.Empty;
-                StringBuilder sqlExpression = new StringBuilder();
-
-                if (rows.Count<DataRow>() > 0 ) 
-                {
-                    foreach (DataRow row in rows)
-                    {
-                        if (row.Table.Columns.Contains("logicalOperator"))
-                        {
-                            string logicalOperator = row["logicalOperator"].ToString();
-                            sqlExpression.Append(" " + logicalOperator);
-                        }
-                        sqlExpression.Append(" lv.label_value ");
-
-                        string relationalOperator = row["relationalOperator"].ToString();
-                        string value = row["value"].ToString();
-                        if (relationalOperator.ToLower() == "startswith")
-                        {
-                            sqlExpression.Append(" LIKE '" + value.Replace("'", "''") + "%'");
-                        }
-                        else if (relationalOperator.ToLower() == "endswith")
-                        {
-                            sqlExpression.Append(" LIKE '%" + value.Replace("'", "''") + "'");
-                        }
-                        else if (relationalOperator.ToLower() == "contains")
-                        {
-                            sqlExpression.Append(" LIKE '%" + value.Replace("'", "''") + "%'");
-                        }
-                        else if (relationalOperator.ToLower() == "equalto")
-                        {
-                            sqlExpression.Append("='" + value.Replace("'", "''") + "'");
-                        }
-                        else if (relationalOperator.ToLower() == "notequalto")
-                        {
-                            sqlExpression.Append("<>'" + value.Replace("'", "''") + "'");
-                        }
-                    }
-
-                    parentCursorForSP = "DECLARE Linkage_Index CURSOR FOR" +
-                                        " (select distinct linkage_index,(select ISNULL(Max(label_line_number),0)+1 from labels_"+ uId +" where linkage_index= A.linkage_index)" +
-                                        " as labelNo from labels_"+ uId +" A join label_values_"+ uId +" lv on lv.label_value_index = A.label_value_index" +
-                                        " where label_name_index = " + Key_Index + " and  " + sqlExpression + ") order by linkage_index";
-
-                }
-                else
-                {
-                    parentCursorForSP = "DECLARE Linkage_Index CURSOR FOR" +
+                
+               string parentCursorForSP = "DECLARE Linkage_Index CURSOR FOR" +
                                          " (select linkage_index,(select ISNULL(Max(label_line_number),0)+1 from labels_" + uId + " where linkage_index= A.linkage_index)" +
                                          " as labelNo from labels_" + uId + " A where label_name_index = " + Key_Index + " )order by linkage_index";
+               
+
+                if (dsFilter.Tables.Count > 0)
+                {
+                    var rows = (from DataRow dr in dsFilter.Tables[0].Rows
+                                where ((string)dr["objectName"]).ToLower() == _objectType.ToLower()
+                                select dr);
+
+                    StringBuilder sqlExpression = new StringBuilder();
+
+                    if (rows.Count<DataRow>() > 0)
+                    {
+                        foreach (DataRow row in rows)
+                        {
+                            if (row.Table.Columns.Contains("logicalOperator"))
+                            {
+                                string logicalOperator = row["logicalOperator"].ToString();
+                                sqlExpression.Append(" " + logicalOperator);
+                            }
+                            sqlExpression.Append(" lv.label_value ");
+
+                            string relationalOperator = row["relationalOperator"].ToString();
+                            string value = row["value"].ToString();
+                            if (relationalOperator.ToLower() == "startswith")
+                            {
+                                sqlExpression.Append(" LIKE '" + value.Replace("'", "''") + "%'");
+                            }
+                            else if (relationalOperator.ToLower() == "endswith")
+                            {
+                                sqlExpression.Append(" LIKE '%" + value.Replace("'", "''") + "'");
+                            }
+                            else if (relationalOperator.ToLower() == "contains")
+                            {
+                                sqlExpression.Append(" LIKE '%" + value.Replace("'", "''") + "%'");
+                            }
+                            else if (relationalOperator.ToLower() == "equalto")
+                            {
+                                sqlExpression.Append("='" + value.Replace("'", "''") + "'");
+                            }
+                            else if (relationalOperator.ToLower() == "notequalto")
+                            {
+                                sqlExpression.Append("<>'" + value.Replace("'", "''") + "'");
+                            }
+                        }
+
+                        parentCursorForSP = "DECLARE Linkage_Index CURSOR FOR" +
+                                            " (select distinct linkage_index,(select ISNULL(Max(label_line_number),0)+1 from labels_" + uId + " where linkage_index= A.linkage_index)" +
+                                            " as labelNo from labels_" + uId + " A join label_values_" + uId + " lv on lv.label_value_index = A.label_value_index" +
+                                            " where label_name_index = " + Key_Index + " and  " + sqlExpression + ") order by linkage_index";
+
+                    }
+                    //else
+                    //{
+                    //    parentCursorForSP = "DECLARE Linkage_Index CURSOR FOR" +
+                    //                         " (select linkage_index,(select ISNULL(Max(label_line_number),0)+1 from labels_" + uId + " where linkage_index= A.linkage_index)" +
+                    //                         " as labelNo from labels_" + uId + " A where label_name_index = " + Key_Index + " )order by linkage_index";
+                    //}
                 }
+                //else
+                //{
+                //    parentCursorForSP = "DECLARE Linkage_Index CURSOR FOR" +
+                //                         " (select linkage_index,(select ISNULL(Max(label_line_number),0)+1 from labels_" + uId + " where linkage_index= A.linkage_index)" +
+                //                         " as labelNo from labels_" + uId + " A where label_name_index = " + Key_Index + " )order by linkage_index";
+                //}
                 //--------------------------------
 
                 //If there are new properties add it to all linkages of that object.
